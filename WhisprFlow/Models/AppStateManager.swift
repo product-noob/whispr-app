@@ -13,6 +13,12 @@ final class AppStateManager {
     /// The transcribed text from the last successful transcription
     private(set) var lastTranscription: String?
     
+    /// Partial transcript for fast/realtime mode (updated as user speaks)
+    var partialTranscript: String = ""
+    
+    /// Whether we're in fast/realtime mode
+    var isFastMode: Bool = false
+    
     // MARK: - State Queries
     
     var canStartRecording: Bool {
@@ -73,7 +79,8 @@ final class AppStateManager {
     
     /// Mark transcription as successful
     func transcriptionSucceeded(text: String) {
-        guard state == .transcribing else { return }
+        // Allow from transcribing (standard mode) or recording (fast mode)
+        guard state == .transcribing || state == .recording else { return }
         lastTranscription = text
         state = .idle
     }
@@ -111,5 +118,17 @@ final class AppStateManager {
         state = .idle
         currentRecordingURL = nil
         lastTranscription = nil
+        partialTranscript = ""
+        isFastMode = false
+    }
+    
+    /// Update partial transcript (for fast mode)
+    func updatePartialTranscript(_ text: String) {
+        partialTranscript = text
+    }
+    
+    /// Clear partial transcript
+    func clearPartialTranscript() {
+        partialTranscript = ""
     }
 }

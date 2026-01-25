@@ -129,39 +129,61 @@ struct PillView: View {
     // MARK: - Recording State
     
     private var recordingContent: some View {
-        HStack(spacing: 12) {
-            // Animated recording indicator
-            HStack(spacing: 3) {
-                ForEach(0..<5) { i in
-                    RecordingBar(index: i)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 12) {
+                // Animated recording indicator
+                HStack(spacing: 3) {
+                    ForEach(0..<5) { i in
+                        RecordingBar(index: i)
+                    }
                 }
+                .frame(width: 30)
+                
+                // Show "Recording..." or partial transcript
+                if stateManager.isFastMode && !stateManager.partialTranscript.isEmpty {
+                    Text(stateManager.partialTranscript)
+                        .font(.system(size: 13))
+                        .foregroundStyle(.white.opacity(0.9))
+                        .lineLimit(2)
+                        .truncationMode(.head)
+                } else {
+                    Text(stateManager.isFastMode ? "Listening..." : "Recording...")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.white.opacity(0.9))
+                }
+                
+                Spacer()
+                
+                // Stop button
+                Button(action: handleStop) {
+                    Image(systemName: "stop.fill")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.white)
+                        .padding(6)
+                        .background(Color.white.opacity(0.2))
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+                
+                // Cancel button
+                Button(action: handleCancel) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(.white.opacity(0.6))
+                }
+                .buttonStyle(.plain)
             }
-            .frame(width: 30)
             
-            Text("Recording...")
-                .font(.system(size: 13))
-                .foregroundStyle(.white.opacity(0.9))
-            
-            Spacer()
-            
-            // Stop button
-            Button(action: handleStop) {
-                Image(systemName: "stop.fill")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.white)
-                    .padding(6)
-                    .background(Color.white.opacity(0.2))
-                    .clipShape(Circle())
+            // Fast mode indicator
+            if stateManager.isFastMode {
+                HStack(spacing: 4) {
+                    Image(systemName: "bolt.fill")
+                        .font(.system(size: 9))
+                    Text("Fast mode")
+                        .font(.system(size: 9))
+                }
+                .foregroundStyle(Color(hex: "F59E0B"))
             }
-            .buttonStyle(.plain)
-            
-            // Cancel button
-            Button(action: handleCancel) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(.white.opacity(0.6))
-            }
-            .buttonStyle(.plain)
         }
     }
     

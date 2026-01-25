@@ -1,5 +1,43 @@
 import Foundation
 
+// MARK: - Transcription Mode
+
+/// Transcription mode selection
+enum TranscriptionMode: String, CaseIterable, Codable {
+    case standard = "standard"   // File upload (cheaper, slight delay)
+    case fast = "fast"           // Realtime WebSocket (instant, higher cost)
+    
+    var displayName: String {
+        switch self {
+        case .standard: return "Standard"
+        case .fast: return "Fast (Realtime)"
+        }
+    }
+    
+    var description: String {
+        switch self {
+        case .standard: return "Batch upload - Best for cost efficiency"
+        case .fast: return "Real-time streaming - Instant results (~10x cost)"
+        }
+    }
+    
+    /// Get/set current mode from UserDefaults
+    static var current: TranscriptionMode {
+        get {
+            if let saved = UserDefaults.standard.string(forKey: "transcription_mode"),
+               let mode = TranscriptionMode(rawValue: saved) {
+                return mode
+            }
+            return .standard
+        }
+        set {
+            UserDefaults.standard.set(newValue.rawValue, forKey: "transcription_mode")
+        }
+    }
+}
+
+// MARK: - Transcription Entry
+
 /// Represents a single transcription entry in history
 struct TranscriptionEntry: Identifiable, Codable, Equatable {
     let id: UUID

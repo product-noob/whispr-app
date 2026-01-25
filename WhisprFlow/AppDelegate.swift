@@ -30,6 +30,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let hotkeyManager = HotkeyManager()
     private let outputDispatcher = OutputDispatcher()
     private let historyStore = HistoryStore()
+    private let realtimeTranscriber = RealtimeTranscriber()
     
     // MARK: - Windows
     
@@ -237,13 +238,72 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         
+        // Check transcription mode
+        let mode = TranscriptionMode.current
+        logToFile("[AppDelegate] Starting recording in \(mode.displayName) mode")
+        
+        if mode == .fast {
+            startFastModeRecording()
+        } else {
+            startStandardModeRecording()
+        }
+    }
+    
+    private func startStandardModeRecording() {
         do {
             let url = try audioRecorder.startRecording()
-            print("[WhisprFlow] Recording started, saving to: \(url.path)")
+            print("[WhisprFlow] Recording started (standard mode), saving to: \(url.path)")
+            stateManager.isFastMode = false
             stateManager.startRecording()
         } catch {
             print("[WhisprFlow] ERROR starting recording: \(error.localizedDescription)")
             stateManager.setError(.recordingFailed(error.localizedDescription))
+        }
+    }
+    
+    private func startFastModeRecording() {
+        Task {
+            do {
+                // Connect to realtime API
+                logToFile("[AppDelegate] Connecting to Realtime API...")
+                try await realtimeTranscriber.connect()
+                
+                // Setup callbacks
+                realtimeTranscriber.onPartialTranscript = { [weak self] transcript in
+                    DispatchQueue.main.async {
+                        self?.stateManager.updatePartialTranscript(transcript)
+                    }
+                }
+                
+                realtimeTranscriber.onError = { [weak self] error in
+                    logToFile("[AppDelegate] Realtime error: \(error.localizedDescription)")
+                    DispatchQueue.main.async {
+                        self?.stateManager.setError(.transcriptionFailed(error.localizedDescription))
+                    }
+                }
+                
+                // Setup audio streaming
+                audioRecorder.onAudioChunk = { [weak self] chunk in
+                    self?.realtimeTranscriber.sendAudioChunk(chunk)
+                }
+                
+                // Start streaming recording
+                try audioRecorder.startStreamingRecording()
+                
+                await MainActor.run {
+                    stateManager.isFastMode = true
+                    stateManager.clearPartialTranscript()
+                    stateManager.startRecording()
+                }
+                
+                logToFile("[AppDelegate] Fast mode recording started")
+                
+            } catch {
+                logToFile("[AppDelegate] Failed to start fast mode: \(error.localizedDescription)")
+                await MainActor.run {
+                    stateManager.setError(.recordingFailed(error.localizedDescription))
+                }
+            }
         }
     }
     
@@ -257,6 +317,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         
+        if stateManager.isFastMode {
+            stopFastModeRecording()
+        } else {
+            stopStandardModeRecording()
+        }
+    }
+    
+    private func stopStandardModeRecording() {
         do {
             let audioURL = try audioRecorder.stopRecording()
             print("[WhisprFlow] Recording stopped, file at: \(audioURL.path)")
@@ -271,8 +339,67 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
     
+    private func stopFastModeRecording() {
+        logToFile("[AppDelegate] Stopping fast mode recording...")
+        
+        // Stop streaming audio first
+        audioRecorder.stopStreamingRecording()
+        audioRecorder.onAudioChunk = nil
+        
+        // Clear error callback BEFORE signaling end to prevent race conditions
+        // (server errors from endAudio() should not affect app state)
+        realtimeTranscriber.onError = nil
+        
+        // Signal end of audio (commits the buffer)
+        realtimeTranscriber.endAudio()
+        
+        // Give time for final transcripts to arrive (500ms should be enough for server processing)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            guard let self = self else { return }
+            
+            // Clear partial transcript callback
+            self.realtimeTranscriber.onPartialTranscript = nil
+            
+            // Get final transcript
+            let finalTranscript = self.realtimeTranscriber.getCurrentTranscript().trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            logToFile("[AppDelegate] Fast mode final transcript (\(finalTranscript.count) chars): \(finalTranscript.prefix(100))...")
+            
+            // Disconnect
+            self.realtimeTranscriber.disconnect()
+            
+            // Update state FIRST
+            self.stateManager.isFastMode = false
+            self.stateManager.clearPartialTranscript()
+            
+            if finalTranscript.isEmpty {
+                logToFile("[AppDelegate] Fast mode: empty transcript, setting error")
+                self.stateManager.setError(.emptyTranscription)
+            } else {
+                logToFile("[AppDelegate] Fast mode: success, transitioning to idle")
+                // Success!
+                self.stateManager.transcriptionSucceeded(text: finalTranscript)
+                self.historyStore.addEntry(finalTranscript)
+                self.insertText(finalTranscript)
+                logToFile("[AppDelegate] Fast mode: state after success: \(self.stateManager.state)")
+            }
+        }
+    }
+    
     private func cancelRecording() {
-        audioRecorder.cancelRecording()
+        if stateManager.isFastMode {
+            // Clear callbacks first
+            realtimeTranscriber.onPartialTranscript = nil
+            realtimeTranscriber.onError = nil
+            audioRecorder.onAudioChunk = nil
+            
+            audioRecorder.stopStreamingRecording()
+            realtimeTranscriber.disconnect()
+            stateManager.isFastMode = false
+            stateManager.clearPartialTranscript()
+        } else {
+            audioRecorder.cancelRecording()
+        }
         stateManager.cancelRecording()
     }
     
@@ -280,12 +407,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     
     private func transcribe(audioURL: URL) {
         print("[WhisprFlow] transcribe() called for: \(audioURL.lastPathComponent)")
+        logToFile("[AppDelegate] Starting transcription for: \(audioURL.lastPathComponent)")
         
         Task {
             do {
+                // Step 1: Compress audio to M4A for faster upload
+                logToFile("[AppDelegate] Compressing audio to M4A...")
+                let compressedURL: URL
+                do {
+                    compressedURL = try await audioRecorder.compressToM4A(wavURL: audioURL)
+                    logToFile("[AppDelegate] Compression successful: \(compressedURL.lastPathComponent)")
+                } catch {
+                    // If compression fails, use original WAV
+                    logToFile("[AppDelegate] Compression failed, using original WAV: \(error.localizedDescription)")
+                    compressedURL = audioURL
+                }
+                
+                // Step 2: Transcribe
                 print("[WhisprFlow] Calling transcription API...")
-                let text = try await transcriptionManager.transcribe(audioURL: audioURL)
+                logToFile("[AppDelegate] Calling transcription API...")
+                let text = try await transcriptionManager.transcribe(audioURL: compressedURL)
                 print("[WhisprFlow] Transcription SUCCESS: \"\(text.prefix(50))...\"")
+                logToFile("[AppDelegate] Transcription SUCCESS: \(text.count) characters")
+                
+                // Cleanup compressed file
+                try? FileManager.default.removeItem(at: compressedURL)
                 
                 await MainActor.run {
                     stateManager.transcriptionSucceeded(text: text)
@@ -297,6 +443,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             } catch let error as TranscriptionManager.TranscriptionError {
                 print("[WhisprFlow] Transcription ERROR: \(error.localizedDescription)")
+                logToFile("[AppDelegate] Transcription ERROR: \(error.localizedDescription)")
                 await MainActor.run {
                     switch error {
                     case .noAPIKey:
@@ -315,6 +462,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             } catch {
                 print("[WhisprFlow] Transcription UNEXPECTED ERROR: \(error.localizedDescription)")
+                logToFile("[AppDelegate] Transcription UNEXPECTED ERROR: \(error.localizedDescription)")
                 await MainActor.run {
                     stateManager.transcriptionFailed(error: .transcriptionFailed(error.localizedDescription))
                 }

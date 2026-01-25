@@ -3,10 +3,21 @@ import Foundation
 /// Manages transcription requests to OpenAI API with single-request guard and timeout
 final class TranscriptionManager {
     private var currentTask: Task<String, Error>?
-    private let timeout: TimeInterval
     
-    init(timeout: TimeInterval = 30) {
-        self.timeout = timeout
+    // Dynamic timeout settings
+    private let baseTimeout: TimeInterval = 45      // Minimum timeout
+    private let maxTimeout: TimeInterval = 180      // Maximum timeout (3 minutes)
+    private let timeoutPerMB: TimeInterval = 15     // Additional seconds per MB
+    
+    init() {}
+    
+    /// Calculate dynamic timeout based on file size
+    private func calculateTimeout(for fileSize: Int64) -> TimeInterval {
+        let mbSize = Double(fileSize) / (1024 * 1024)
+        let calculatedTimeout = baseTimeout + (mbSize * timeoutPerMB)
+        let finalTimeout = min(maxTimeout, max(baseTimeout, calculatedTimeout))
+        logToFile("[TranscriptionManager] File size: \(fileSize) bytes (\(String(format: "%.2f", mbSize)) MB), timeout: \(finalTimeout)s")
+        return finalTimeout
     }
     
     enum TranscriptionError: Error, LocalizedError {
@@ -56,6 +67,10 @@ final class TranscriptionManager {
             throw TranscriptionError.fileNotFound
         }
         
+        // Calculate dynamic timeout based on file size
+        let fileSize = (try? FileManager.default.attributesOfItem(atPath: audioURL.path)[.size] as? Int64) ?? 0
+        let timeout = calculateTimeout(for: fileSize)
+        
         let task = Task<String, Error> {
             try await withThrowingTaskGroup(of: String.self) { group in
                 // API call task
@@ -65,7 +80,7 @@ final class TranscriptionManager {
                 
                 // Timeout task
                 group.addTask {
-                    try await Task.sleep(for: .seconds(self.timeout))
+                    try await Task.sleep(for: .seconds(timeout))
                     throw TranscriptionError.timeout
                 }
                 
@@ -118,12 +133,27 @@ final class TranscriptionManager {
         body.append("Content-Disposition: form-data; name=\"language\"\r\n\r\n".data(using: .utf8)!)
         body.append("en\r\n".data(using: .utf8)!)
         
-        // Add file
+        // Add file with appropriate content type
         let audioData = try Data(contentsOf: audioURL)
         let filename = audioURL.lastPathComponent
+        let fileExtension = audioURL.pathExtension.lowercased()
+        let contentType: String
+        switch fileExtension {
+        case "m4a":
+            contentType = "audio/mp4"
+        case "mp3":
+            contentType = "audio/mpeg"
+        case "wav":
+            contentType = "audio/wav"
+        default:
+            contentType = "audio/\(fileExtension)"
+        }
+        
+        logToFile("[TranscriptionManager] Uploading \(filename) (\(audioData.count) bytes) as \(contentType)")
+        
         body.append("--\(boundary)\r\n".data(using: .utf8)!)
         body.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
-        body.append("Content-Type: audio/wav\r\n\r\n".data(using: .utf8)!)
+        body.append("Content-Type: \(contentType)\r\n\r\n".data(using: .utf8)!)
         body.append(audioData)
         body.append("\r\n".data(using: .utf8)!)
         

@@ -17,6 +17,7 @@ struct HistoryView: View {
     @State private var showAPIKey = false
     @State private var selectedHotkey: HotkeyManager.HotkeyType = .controlSpace
     @State private var selectedOutputMode: OutputDispatcher.OutputMode = .paste
+    @State private var selectedTranscriptionMode: TranscriptionMode = .standard
     
     var body: some View {
         HStack(spacing: 0) {
@@ -629,6 +630,39 @@ struct HistoryView: View {
                     }
                 }
                 
+                // Transcription Mode Section
+                settingsSection("Transcription Mode") {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Mode")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(Color(hex: "374151"))
+                        
+                        Picker("", selection: $selectedTranscriptionMode) {
+                            ForEach(TranscriptionMode.allCases, id: \.self) { mode in
+                                Text(mode.displayName).tag(mode)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        
+                        Text(selectedTranscriptionMode.description)
+                            .font(.system(size: 11))
+                            .foregroundStyle(Color(hex: "9CA3AF"))
+                        
+                        if selectedTranscriptionMode == .fast {
+                            HStack(spacing: 6) {
+                                Image(systemName: "bolt.fill")
+                                    .foregroundStyle(Color(hex: "F59E0B"))
+                                Text("Fast mode shows live transcription as you speak")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(Color(hex: "F59E0B"))
+                            }
+                            .padding(8)
+                            .background(Color(hex: "F59E0B").opacity(0.1))
+                            .cornerRadius(6)
+                        }
+                    }
+                }
+                
                 // Hotkey Section
                 settingsSection("Hotkey") {
                     VStack(alignment: .leading, spacing: 12) {
@@ -766,6 +800,7 @@ struct HistoryView: View {
         apiKey = KeychainHelper.getAPIKey() ?? ""
         selectedHotkey = hotkeyManager.currentHotkey
         selectedOutputMode = outputDispatcher.outputMode
+        selectedTranscriptionMode = TranscriptionMode.current
     }
     
     private func saveSettings() {
@@ -773,6 +808,9 @@ struct HistoryView: View {
         if !apiKey.isEmpty {
             _ = KeychainHelper.saveAPIKey(apiKey)
         }
+        
+        // Save transcription mode
+        TranscriptionMode.current = selectedTranscriptionMode
         
         // Save hotkey
         hotkeyManager.setHotkey(selectedHotkey)
