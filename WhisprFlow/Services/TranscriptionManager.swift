@@ -26,6 +26,7 @@ final class TranscriptionManager {
         case networkError(String)
         case invalidAPIKey
         case noAPIKey
+        case trialEnded
         case serverError(Int, String)
         case invalidResponse
         case emptyTranscription
@@ -38,6 +39,7 @@ final class TranscriptionManager {
             case .networkError(let msg): return "Network error: \(msg)"
             case .invalidAPIKey: return "Invalid API key"
             case .noAPIKey: return "No API key configured"
+            case .trialEnded: return "Trial ended - add your own API key"
             case .serverError(let code, let msg): return "Server error (\(code)): \(msg)"
             case .invalidResponse: return "Invalid response from server"
             case .emptyTranscription: return "No speech detected"
@@ -57,8 +59,12 @@ final class TranscriptionManager {
             throw TranscriptionError.alreadyInProgress
         }
         
-        // Get API key
-        guard let apiKey = KeychainHelper.getAPIKey(), !apiKey.isEmpty else {
+        // Get API key via TrialTracker (handles trial vs user key)
+        guard let apiKey = TrialTracker.shared.getAPIKey(), !apiKey.isEmpty else {
+            // Determine the specific error
+            if TrialTracker.shared.trialEnded && !KeychainHelper.hasAPIKey {
+                throw TranscriptionError.trialEnded
+            }
             throw TranscriptionError.noAPIKey
         }
         
@@ -98,6 +104,10 @@ final class TranscriptionManager {
         do {
             let result = try await task.value
             currentTask = nil
+            
+            // Record successful transcription for trial tracking
+            TrialTracker.shared.recordTranscription()
+            
             return result
         } catch {
             currentTask = nil

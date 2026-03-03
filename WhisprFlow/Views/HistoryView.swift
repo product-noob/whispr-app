@@ -17,7 +17,6 @@ struct HistoryView: View {
     @State private var showAPIKey = false
     @State private var selectedHotkey: HotkeyManager.HotkeyType = .controlSpace
     @State private var selectedOutputMode: OutputDispatcher.OutputMode = .paste
-    @State private var selectedTranscriptionMode: TranscriptionMode = .standard
     
     var body: some View {
         HStack(spacing: 0) {
@@ -47,7 +46,7 @@ struct HistoryView: View {
                     .font(.system(size: 20, weight: .semibold))
                     .foregroundStyle(Color(hex: "8B5CF6"))
                 
-                Text("WhisprFlow")
+                Text("Whispr")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(Color(hex: "1F2937"))
             }
@@ -64,8 +63,8 @@ struct HistoryView: View {
             
             Spacer()
             
-            // Stats card at bottom
-            statsCard
+            // Streak indicator at bottom
+            streakIndicator
                 .padding(12)
         }
         .frame(width: 200)
@@ -93,37 +92,55 @@ struct HistoryView: View {
         .buttonStyle(.plain)
     }
     
-    private var statsCard: some View {
+    private var streakIndicator: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Today's Stats")
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(Color(hex: "9CA3AF"))
-            
-            HStack(spacing: 16) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("\(historyStore.todayEntryCount)")
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundStyle(Color(hex: "1F2937"))
-                    Text("entries")
-                        .font(.system(size: 10))
-                        .foregroundStyle(Color(hex: "9CA3AF"))
-                }
+            HStack(spacing: 8) {
+                Image(systemName: "flame.fill")
+                    .font(.system(size: 20))
+                    .foregroundStyle(historyStore.currentStreak > 0 ? Color.orange : Color(hex: "D1D5DB"))
                 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("\(historyStore.todayWordCount)")
+                    Text("\(historyStore.currentStreak)")
                         .font(.system(size: 20, weight: .bold))
                         .foregroundStyle(Color(hex: "1F2937"))
-                    Text("words")
+                    Text(historyStore.currentStreak == 1 ? "day streak" : "day streak")
                         .font(.system(size: 10))
                         .foregroundStyle(Color(hex: "9CA3AF"))
                 }
             }
+            
+            if historyStore.currentStreak > 0 {
+                Text(streakMotivation)
+                    .font(.system(size: 11))
+                    .foregroundStyle(Color(hex: "6B7280"))
+            }
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white)
+        .background(
+            historyStore.currentStreak > 0 
+                ? Color.orange.opacity(0.1) 
+                : Color.white
+        )
         .cornerRadius(12)
-        .shadow(color: .black.opacity(0.05), radius: 4, y: 2)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(
+                    historyStore.currentStreak > 0 
+                        ? Color.orange.opacity(0.3) 
+                        : Color(hex: "E5E5E5"),
+                    lineWidth: 1
+                )
+        )
+    }
+    
+    private var streakMotivation: String {
+        let streak = historyStore.currentStreak
+        if streak >= 30 { return "Incredible! 🔥" }
+        if streak >= 14 { return "On fire! Keep going!" }
+        if streak >= 7 { return "One week strong!" }
+        if streak >= 3 { return "Building momentum!" }
+        return "Great start!"
     }
     
     // MARK: - Main Content
@@ -150,7 +167,7 @@ struct HistoryView: View {
             VStack(alignment: .leading, spacing: 24) {
                 // Welcome header
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Welcome to WhisprFlow")
+                    Text("Welcome to Whispr")
                         .font(.system(size: 28, weight: .bold))
                         .foregroundStyle(Color(hex: "1F2937"))
                     
@@ -191,86 +208,40 @@ struct HistoryView: View {
                             color: Color(hex: "F59E0B")
                         )
                     }
-                    
-                    // Secondary metrics row
-                    HStack(spacing: 12) {
-                        secondaryMetric(
-                            value: "\(historyStore.todayWordCount)",
-                            label: "Words Today"
-                        )
-                        secondaryMetric(
-                            value: "\(historyStore.todayEntryCount)",
-                            label: "Today's Entries"
-                        )
-                        secondaryMetric(
-                            value: "\(historyStore.averageWordsPerEntry)",
-                            label: "Avg Words/Entry"
-                        )
-                    }
                 }
                 
-                // Quick Actions
+                // Recent Activity
+                recentActivitySection
+                
+                // Quick Actions (compact)
                 VStack(alignment: .leading, spacing: 12) {
                     Text("QUICK ACTIONS")
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(Color(hex: "9CA3AF"))
                         .tracking(0.5)
                     
-                    HStack(spacing: 12) {
-                        quickActionCard(
+                    HStack(spacing: 8) {
+                        compactActionButton(
                             icon: "mic.fill",
-                            title: "Start Recording",
-                            subtitle: "Hold \(hotkeyManager.currentHotkey.displayName)",
+                            title: "Record",
                             color: Color(hex: "10B981"),
                             action: { onStartRecording?() }
                         )
                         
-                        quickActionCard(
+                        compactActionButton(
                             icon: "clock.fill",
-                            title: "View History",
-                            subtitle: "\(historyStore.entries.count) transcriptions",
+                            title: "History",
                             color: Color(hex: "8B5CF6"),
                             action: { selectedTab = "history" }
                         )
                         
-                        quickActionCard(
+                        compactActionButton(
                             icon: "gearshape.fill",
                             title: "Settings",
-                            subtitle: "Configure app",
                             color: Color(hex: "6B7280"),
                             action: { selectedTab = "settings" }
                         )
                     }
-                }
-                
-                // Status Section
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("STATUS")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(Color(hex: "9CA3AF"))
-                        .tracking(0.5)
-                    
-                    HStack(spacing: 12) {
-                        statusCard("API Key", isConfigured: KeychainHelper.hasAPIKey)
-                        statusCard("Microphone", isConfigured: true)
-                        statusCard("Accessibility", isConfigured: hotkeyManager.hasAccessibilityPermission)
-                    }
-                }
-                
-                // Keyboard Shortcuts
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("KEYBOARD SHORTCUTS")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(Color(hex: "9CA3AF"))
-                        .tracking(0.5)
-                    
-                    VStack(spacing: 8) {
-                        shortcutRow("Start/Stop Recording", shortcut: hotkeyManager.currentHotkey.displayName)
-                        shortcutRow("Open Dashboard", shortcut: "Right-click pill")
-                    }
-                    .padding(16)
-                    .background(Color(hex: "F9FAFB"))
-                    .cornerRadius(12)
                 }
             }
             .padding(24)
@@ -307,20 +278,76 @@ struct HistoryView: View {
         )
     }
     
-    private func secondaryMetric(value: String, label: String) -> some View {
-        VStack(spacing: 4) {
-            Text(value)
-                .font(.system(size: 18, weight: .semibold, design: .rounded))
-                .foregroundStyle(Color(hex: "1F2937"))
+    private var recentActivitySection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("RECENT ACTIVITY")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Color(hex: "9CA3AF"))
+                    .tracking(0.5)
+                
+                Spacer()
+                
+                if !historyStore.entries.isEmpty {
+                    Button(action: { selectedTab = "history" }) {
+                        Text("View All")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(Color(hex: "8B5CF6"))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
             
-            Text(label)
-                .font(.system(size: 11))
-                .foregroundStyle(Color(hex: "9CA3AF"))
+            if historyStore.entries.isEmpty {
+                VStack(spacing: 8) {
+                    Image(systemName: "waveform")
+                        .font(.system(size: 24))
+                        .foregroundStyle(Color(hex: "D1D5DB"))
+                    
+                    Text("No transcriptions yet")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color(hex: "9CA3AF"))
+                    
+                    Text("Hold \(hotkeyManager.currentHotkey.displayName) to start dictating")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color(hex: "9CA3AF"))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 24)
+                .background(Color(hex: "F9FAFB"))
+                .cornerRadius(12)
+            } else {
+                VStack(spacing: 8) {
+                    ForEach(historyStore.recentEntries(limit: 5)) { entry in
+                        recentEntryRow(entry)
+                    }
+                }
+            }
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 12)
-        .background(Color(hex: "F9FAFB"))
-        .cornerRadius(8)
+    }
+    
+    private func compactActionButton(icon: String, title: String, color: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.system(size: 14))
+                    .foregroundStyle(color)
+                
+                Text(title)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(Color(hex: "1F2937"))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .padding(.horizontal, 12)
+            .background(Color.white)
+            .cornerRadius(8)
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color(hex: "E5E5E5"), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
     }
     
     private func statusCard(_ title: String, isConfigured: Bool) -> some View {
@@ -338,36 +365,6 @@ struct HistoryView: View {
         .padding(.horizontal, 12)
         .background(isConfigured ? Color(hex: "10B981").opacity(0.1) : Color.orange.opacity(0.1))
         .cornerRadius(8)
-    }
-    
-    private func quickActionCard(icon: String, title: String, subtitle: String, color: Color, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            VStack(alignment: .leading, spacing: 12) {
-                Image(systemName: icon)
-                    .font(.system(size: 24))
-                    .foregroundStyle(color)
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(title)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(Color(hex: "1F2937"))
-                    
-                    Text(subtitle)
-                        .font(.system(size: 12))
-                        .foregroundStyle(Color(hex: "9CA3AF"))
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(16)
-            .background(Color.white)
-            .cornerRadius(12)
-            .shadow(color: .black.opacity(0.05), radius: 4, y: 2)
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color(hex: "E5E5E5"), lineWidth: 1)
-            )
-        }
-        .buttonStyle(.plain)
     }
     
     private func shortcutRow(_ action: String, shortcut: String) -> some View {
@@ -586,7 +583,7 @@ struct HistoryView: View {
                         .font(.system(size: 24, weight: .semibold))
                         .foregroundStyle(Color(hex: "1F2937"))
                     
-                    Text("Configure WhisprFlow to your preferences")
+                    Text("Configure Whispr to your preferences")
                         .font(.system(size: 14))
                         .foregroundStyle(Color(hex: "6B7280"))
                 }
@@ -627,39 +624,6 @@ struct HistoryView: View {
                         Text("Your API key is stored locally and never shared.")
                             .font(.system(size: 11))
                             .foregroundStyle(Color(hex: "9CA3AF"))
-                    }
-                }
-                
-                // Transcription Mode Section
-                settingsSection("Transcription Mode") {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Mode")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(Color(hex: "374151"))
-                        
-                        Picker("", selection: $selectedTranscriptionMode) {
-                            ForEach(TranscriptionMode.allCases, id: \.self) { mode in
-                                Text(mode.displayName).tag(mode)
-                            }
-                        }
-                        .pickerStyle(.segmented)
-                        
-                        Text(selectedTranscriptionMode.description)
-                            .font(.system(size: 11))
-                            .foregroundStyle(Color(hex: "9CA3AF"))
-                        
-                        if selectedTranscriptionMode == .fast {
-                            HStack(spacing: 6) {
-                                Image(systemName: "bolt.fill")
-                                    .foregroundStyle(Color(hex: "F59E0B"))
-                                Text("Fast mode shows live transcription as you speak")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(Color(hex: "F59E0B"))
-                            }
-                            .padding(8)
-                            .background(Color(hex: "F59E0B").opacity(0.1))
-                            .cornerRadius(6)
-                        }
                     }
                 }
                 
@@ -717,6 +681,23 @@ struct HistoryView: View {
                 }
                 .buttonStyle(.plain)
                 
+                // Status Section
+                settingsSection("Status") {
+                    HStack(spacing: 12) {
+                        statusCard("API Key", isConfigured: KeychainHelper.hasAPIKey)
+                        statusCard("Microphone", isConfigured: true)
+                        statusCard("Accessibility", isConfigured: hotkeyManager.hasAccessibilityPermission)
+                    }
+                }
+                
+                // Keyboard Shortcuts Section
+                settingsSection("Keyboard Shortcuts") {
+                    VStack(spacing: 8) {
+                        shortcutRow("Start/Stop Recording", shortcut: hotkeyManager.currentHotkey.displayName)
+                        shortcutRow("Open Dashboard", shortcut: "Right-click pill")
+                    }
+                }
+                
                 // Permissions Section
                 settingsSection("Permissions") {
                     VStack(spacing: 12) {
@@ -732,7 +713,7 @@ struct HistoryView: View {
                 
                 // About Section
                 settingsSection("About") {
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 12) {
                         HStack {
                             Text("Version")
                                 .foregroundStyle(Color(hex: "6B7280"))
@@ -742,11 +723,36 @@ struct HistoryView: View {
                         }
                         .font(.system(size: 13))
                         
+                        Divider()
+                        
+                        // Developer attribution
                         HStack {
-                            Text("Build")
+                            Text("Developed by")
                                 .foregroundStyle(Color(hex: "6B7280"))
                             Spacer()
-                            Text("Development")
+                            Button(action: {
+                                if let url = URL(string: "https://princejain.me") {
+                                    NSWorkspace.shared.open(url)
+                                }
+                            }) {
+                                HStack(spacing: 4) {
+                                    Text("Prince Jain")
+                                        .foregroundStyle(Color(hex: "8B5CF6"))
+                                    Image(systemName: "arrow.up.right.square")
+                                        .font(.system(size: 10))
+                                        .foregroundStyle(Color(hex: "8B5CF6"))
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .font(.system(size: 13))
+                        
+                        // Trial status
+                        HStack {
+                            Text("Status")
+                                .foregroundStyle(Color(hex: "6B7280"))
+                            Spacer()
+                            Text(TrialTracker.shared.trialStatusMessage)
                                 .foregroundStyle(Color(hex: "1F2937"))
                         }
                         .font(.system(size: 13))
@@ -800,7 +806,6 @@ struct HistoryView: View {
         apiKey = KeychainHelper.getAPIKey() ?? ""
         selectedHotkey = hotkeyManager.currentHotkey
         selectedOutputMode = outputDispatcher.outputMode
-        selectedTranscriptionMode = TranscriptionMode.current
     }
     
     private func saveSettings() {
@@ -808,9 +813,6 @@ struct HistoryView: View {
         if !apiKey.isEmpty {
             _ = KeychainHelper.saveAPIKey(apiKey)
         }
-        
-        // Save transcription mode
-        TranscriptionMode.current = selectedTranscriptionMode
         
         // Save hotkey
         hotkeyManager.setHotkey(selectedHotkey)

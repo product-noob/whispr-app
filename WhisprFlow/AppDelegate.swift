@@ -30,13 +30,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let hotkeyManager = HotkeyManager()
     private let outputDispatcher = OutputDispatcher()
     private let historyStore = HistoryStore()
-    private let realtimeTranscriber = RealtimeTranscriber()
     
     // MARK: - Windows
     
     private var pillWindowController: PillWindowController?
     private var settingsWindow: NSWindow?
     private var historyWindow: NSWindow?
+    private var addAPIKeyWindowController: AddAPIKeyWindowController?
     
     // MARK: - Menu Bar
     
@@ -78,10 +78,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // Try to load custom icon, fallback to SF Symbol
             if let iconImage = NSImage(named: "MenuBarIcon") {
                 iconImage.size = NSSize(width: 18, height: 18)
-                iconImage.isTemplate = true
+                iconImage.isTemplate = false  // Use original colors
                 button.image = iconImage
             } else {
-                button.image = NSImage(systemSymbolName: "waveform", accessibilityDescription: "WhisprFlow")
+                button.image = NSImage(systemSymbolName: "waveform", accessibilityDescription: "Whispr")
             }
             button.action = #selector(togglePopover)
             button.target = self
@@ -89,7 +89,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         
         // Create popover
         popover = NSPopover()
-        popover?.contentSize = NSSize(width: 500, height: 400)
+        popover?.contentSize = NSSize(width: 300, height: 420)
         popover?.behavior = .transient
         popover?.animates = true
         
@@ -123,6 +123,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
             // Ensure popover window doesn't steal focus from other apps when just viewing
             popover.contentViewController?.view.window?.level = .floating
+        }
+    }
+    
+    /// Update the menu bar icon based on recording state
+    private func updateMenuBarIcon(isRecording: Bool) {
+        guard let button = statusItem?.button else { return }
+        
+        if isRecording {
+            // Use a recording indicator (red dot or waveform.badge.mic)
+            if let recordingImage = NSImage(systemSymbolName: "waveform.badge.mic", accessibilityDescription: "Recording") {
+                recordingImage.isTemplate = false
+                button.image = recordingImage
+            }
+        } else {
+            // Reset to default icon
+            if let iconImage = NSImage(named: "MenuBarIcon") {
+                iconImage.size = NSSize(width: 18, height: 18)
+                iconImage.isTemplate = false
+                button.image = iconImage
+            } else {
+                button.image = NSImage(systemSymbolName: "waveform", accessibilityDescription: "Whispr")
+            }
         }
     }
     
@@ -173,6 +195,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             if !hasPermission {
                 await MainActor.run {
                     stateManager.setError(.microphonePermissionDenied)
+                    scheduleErrorRecovery()
                 }
             }
         }
@@ -183,16 +206,59 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if !hasAccessibility {
             logToFile("Requesting accessibility permission...")
             _ = hotkeyManager.checkAccessibilityPermission() // This prompts the user
+            
+            // Start polling for accessibility permission to restart hotkey manager when granted
+            startAccessibilityPermissionPolling()
         }
         
-        // Check for API key
-        let hasAPIKey = KeychainHelper.hasAPIKey
-        logToFile("API key configured: \(hasAPIKey)")
-        if !hasAPIKey {
-            logToFile("Opening settings for API key setup...")
-            // Open settings on first run
+        // Check API key / trial status
+        let trialTracker = TrialTracker.shared
+        logToFile("Trial active: \(trialTracker.isTrialActive), Has user key: \(KeychainHelper.hasAPIKey)")
+        logToFile("Trial status: \(trialTracker.trialStatusMessage)")
+        
+        // Only prompt if trial ended and no user key
+        if trialTracker.shouldShowAddKeyPrompt {
+            logToFile("Trial ended, showing add API key prompt...")
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
-                self?.openSettings()
+                self?.showAddAPIKeyPrompt()
+            }
+        }
+    }
+    
+    /// Poll for accessibility permission and restart hotkey manager when granted
+    private func startAccessibilityPermissionPolling() {
+        // Check every 2 seconds for up to 60 seconds
+        var attempts = 0
+        let maxAttempts = 30
+        
+        func checkAndRetry() {
+            attempts += 1
+            if hotkeyManager.hasAccessibilityPermission {
+                logToFile("Accessibility permission now granted, restarting hotkey manager...")
+                let started = hotkeyManager.start()
+                logToFile("Hotkey manager restarted: \(started)")
+            } else if attempts < maxAttempts {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                    checkAndRetry()
+                }
+            } else {
+                logToFile("Accessibility permission polling timed out after \(maxAttempts) attempts")
+            }
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            checkAndRetry()
+        }
+    }
+    
+    /// Schedule automatic recovery from error state after a delay
+    private func scheduleErrorRecovery() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4) { [weak self] in
+            guard let self = self else { return }
+            // Only reset if still in error state
+            if case .error = self.stateManager.state {
+                logToFile("Auto-recovering from error state to idle")
+                self.stateManager.reset()
             }
         }
     }
@@ -228,82 +294,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard audioRecorder.hasPermission else {
             print("[WhisprFlow] ERROR: No microphone permission")
             stateManager.setError(.microphonePermissionDenied)
+            scheduleErrorRecovery()
             return
         }
         
-        guard KeychainHelper.hasAPIKey else {
-            print("[WhisprFlow] ERROR: No API key configured")
+        // Check if we can transcribe (trial active OR user has own key)
+        guard TrialTracker.shared.canTranscribe else {
+            print("[WhisprFlow] ERROR: Trial ended and no API key configured")
             stateManager.setError(.noAPIKey)
-            openSettings()
+            scheduleErrorRecovery()
+            showAddAPIKeyPrompt()
             return
         }
         
-        // Check transcription mode
-        let mode = TranscriptionMode.current
-        logToFile("[AppDelegate] Starting recording in \(mode.displayName) mode")
-        
-        if mode == .fast {
-            startFastModeRecording()
-        } else {
-            startStandardModeRecording()
-        }
-    }
-    
-    private func startStandardModeRecording() {
         do {
             let url = try audioRecorder.startRecording()
-            print("[WhisprFlow] Recording started (standard mode), saving to: \(url.path)")
-            stateManager.isFastMode = false
+            print("[WhisprFlow] Recording started, saving to: \(url.path)")
             stateManager.startRecording()
+            updateMenuBarIcon(isRecording: true)
         } catch {
             print("[WhisprFlow] ERROR starting recording: \(error.localizedDescription)")
             stateManager.setError(.recordingFailed(error.localizedDescription))
-        }
-    }
-    
-    private func startFastModeRecording() {
-        Task {
-            do {
-                // Connect to realtime API
-                logToFile("[AppDelegate] Connecting to Realtime API...")
-                try await realtimeTranscriber.connect()
-                
-                // Setup callbacks
-                realtimeTranscriber.onPartialTranscript = { [weak self] transcript in
-                    DispatchQueue.main.async {
-                        self?.stateManager.updatePartialTranscript(transcript)
-                    }
-                }
-                
-                realtimeTranscriber.onError = { [weak self] error in
-                    logToFile("[AppDelegate] Realtime error: \(error.localizedDescription)")
-                    DispatchQueue.main.async {
-                        self?.stateManager.setError(.transcriptionFailed(error.localizedDescription))
-                    }
-                }
-                
-                // Setup audio streaming
-                audioRecorder.onAudioChunk = { [weak self] chunk in
-                    self?.realtimeTranscriber.sendAudioChunk(chunk)
-                }
-                
-                // Start streaming recording
-                try audioRecorder.startStreamingRecording()
-                
-                await MainActor.run {
-                    stateManager.isFastMode = true
-                    stateManager.clearPartialTranscript()
-                    stateManager.startRecording()
-                }
-                
-                logToFile("[AppDelegate] Fast mode recording started")
-                
-            } catch {
-                logToFile("[AppDelegate] Failed to start fast mode: \(error.localizedDescription)")
-                await MainActor.run {
-                    stateManager.setError(.recordingFailed(error.localizedDescription))
-                }
-            }
+            scheduleErrorRecovery()
         }
     }
     
@@ -317,90 +329,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         
-        if stateManager.isFastMode {
-            stopFastModeRecording()
-        } else {
-            stopStandardModeRecording()
-        }
-    }
-    
-    private func stopStandardModeRecording() {
-        do {
-            let audioURL = try audioRecorder.stopRecording()
-            print("[WhisprFlow] Recording stopped, file at: \(audioURL.path)")
-            stateManager.stopRecording(audioURL: audioURL)
-            
-            // Start transcription
-            print("[WhisprFlow] Starting transcription...")
-            transcribe(audioURL: audioURL)
-        } catch {
-            print("[WhisprFlow] ERROR stopping recording: \(error.localizedDescription)")
-            stateManager.setError(.recordingFailed(error.localizedDescription))
-        }
-    }
-    
-    private func stopFastModeRecording() {
-        logToFile("[AppDelegate] Stopping fast mode recording...")
+        // Reset menu bar icon immediately when user releases hotkey
+        updateMenuBarIcon(isRecording: false)
         
-        // Stop streaming audio first
-        audioRecorder.stopStreamingRecording()
-        audioRecorder.onAudioChunk = nil
-        
-        // Clear error callback BEFORE signaling end to prevent race conditions
-        // (server errors from endAudio() should not affect app state)
-        realtimeTranscriber.onError = nil
-        
-        // Signal end of audio (commits the buffer)
-        realtimeTranscriber.endAudio()
-        
-        // Give time for final transcripts to arrive (500ms should be enough for server processing)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-            guard let self = self else { return }
-            
-            // Clear partial transcript callback
-            self.realtimeTranscriber.onPartialTranscript = nil
-            
-            // Get final transcript
-            let finalTranscript = self.realtimeTranscriber.getCurrentTranscript().trimmingCharacters(in: .whitespacesAndNewlines)
-            
-            logToFile("[AppDelegate] Fast mode final transcript (\(finalTranscript.count) chars): \(finalTranscript.prefix(100))...")
-            
-            // Disconnect
-            self.realtimeTranscriber.disconnect()
-            
-            // Update state FIRST
-            self.stateManager.isFastMode = false
-            self.stateManager.clearPartialTranscript()
-            
-            if finalTranscript.isEmpty {
-                logToFile("[AppDelegate] Fast mode: empty transcript, setting error")
-                self.stateManager.setError(.emptyTranscription)
-            } else {
-                logToFile("[AppDelegate] Fast mode: success, transitioning to idle")
-                // Success!
-                self.stateManager.transcriptionSucceeded(text: finalTranscript)
-                self.historyStore.addEntry(finalTranscript)
-                self.insertText(finalTranscript)
-                logToFile("[AppDelegate] Fast mode: state after success: \(self.stateManager.state)")
+        // Use Task to handle async stopRecording (which includes buffer flush delay)
+        Task {
+            do {
+                let audioURL = try await audioRecorder.stopRecording()
+                print("[WhisprFlow] Recording stopped, file at: \(audioURL.path)")
+                
+                await MainActor.run {
+                    stateManager.stopRecording(audioURL: audioURL)
+                    
+                    // Start transcription
+                    print("[WhisprFlow] Starting transcription...")
+                    transcribe(audioURL: audioURL)
+                }
+            } catch {
+                print("[WhisprFlow] ERROR stopping recording: \(error.localizedDescription)")
+                await MainActor.run {
+                    stateManager.setError(.recordingFailed(error.localizedDescription))
+                    scheduleErrorRecovery()
+                }
             }
         }
     }
     
     private func cancelRecording() {
-        if stateManager.isFastMode {
-            // Clear callbacks first
-            realtimeTranscriber.onPartialTranscript = nil
-            realtimeTranscriber.onError = nil
-            audioRecorder.onAudioChunk = nil
-            
-            audioRecorder.stopStreamingRecording()
-            realtimeTranscriber.disconnect()
-            stateManager.isFastMode = false
-            stateManager.clearPartialTranscript()
-        } else {
-            audioRecorder.cancelRecording()
-        }
+        audioRecorder.cancelRecording()
         stateManager.cancelRecording()
+        updateMenuBarIcon(isRecording: false)
     }
     
     // MARK: - Transcription Flow
@@ -411,27 +369,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         
         Task {
             do {
-                // Step 1: Compress audio to M4A for faster upload
-                logToFile("[AppDelegate] Compressing audio to M4A...")
-                let compressedURL: URL
-                do {
-                    compressedURL = try await audioRecorder.compressToM4A(wavURL: audioURL)
-                    logToFile("[AppDelegate] Compression successful: \(compressedURL.lastPathComponent)")
-                } catch {
-                    // If compression fails, use original WAV
-                    logToFile("[AppDelegate] Compression failed, using original WAV: \(error.localizedDescription)")
-                    compressedURL = audioURL
+                // Step 1: Optionally compress audio (skip for small files for speed)
+                let finalURL: URL
+                if audioRecorder.shouldCompress(fileURL: audioURL) {
+                    logToFile("[AppDelegate] Compressing audio to M4A...")
+                    do {
+                        finalURL = try await audioRecorder.compressToM4A(wavURL: audioURL)
+                        logToFile("[AppDelegate] Compression successful: \(finalURL.lastPathComponent)")
+                    } catch {
+                        // If compression fails, use original WAV
+                        logToFile("[AppDelegate] Compression failed, using original WAV: \(error.localizedDescription)")
+                        finalURL = audioURL
+                    }
+                } else {
+                    logToFile("[AppDelegate] Skipping compression for small file")
+                    finalURL = audioURL
                 }
                 
                 // Step 2: Transcribe
                 print("[WhisprFlow] Calling transcription API...")
                 logToFile("[AppDelegate] Calling transcription API...")
-                let text = try await transcriptionManager.transcribe(audioURL: compressedURL)
+                let text = try await transcriptionManager.transcribe(audioURL: finalURL)
                 print("[WhisprFlow] Transcription SUCCESS: \"\(text.prefix(50))...\"")
                 logToFile("[AppDelegate] Transcription SUCCESS: \(text.count) characters")
                 
-                // Cleanup compressed file
-                try? FileManager.default.removeItem(at: compressedURL)
+                // Cleanup audio file
+                try? FileManager.default.removeItem(at: finalURL)
                 
                 await MainActor.run {
                     stateManager.transcriptionSucceeded(text: text)
@@ -448,6 +411,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     switch error {
                     case .noAPIKey:
                         stateManager.transcriptionFailed(error: .noAPIKey)
+                    case .trialEnded:
+                        stateManager.transcriptionFailed(error: .noAPIKey)
+                        showAddAPIKeyPrompt()
                     case .invalidAPIKey:
                         stateManager.transcriptionFailed(error: .invalidAPIKey)
                     case .timeout:
@@ -459,12 +425,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     default:
                         stateManager.transcriptionFailed(error: .transcriptionFailed(error.localizedDescription))
                     }
+                    scheduleErrorRecovery()
                 }
             } catch {
                 print("[WhisprFlow] Transcription UNEXPECTED ERROR: \(error.localizedDescription)")
                 logToFile("[AppDelegate] Transcription UNEXPECTED ERROR: \(error.localizedDescription)")
                 await MainActor.run {
                     stateManager.transcriptionFailed(error: .transcriptionFailed(error.localizedDescription))
+                    scheduleErrorRecovery()
                 }
             }
         }
@@ -507,6 +475,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         print("Notification: \(message)")
     }
     
+    // MARK: - Add API Key Prompt
+    
+    private func showAddAPIKeyPrompt() {
+        if addAPIKeyWindowController == nil {
+            addAPIKeyWindowController = AddAPIKeyWindowController(onKeyAdded: { [weak self] in
+                logToFile("[AppDelegate] User added their API key")
+                self?.addAPIKeyWindowController = nil
+            })
+        }
+        addAPIKeyWindowController?.show()
+    }
+    
     // MARK: - Settings
     
     private func openSettings() {
@@ -527,7 +507,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 backing: .buffered,
                 defer: false
             )
-            window.title = "WhisprFlow Settings"
+            window.title = "Whispr Settings"
             window.contentView = NSHostingView(rootView: settingsView)
             window.center()
             window.isReleasedWhenClosed = false
@@ -562,7 +542,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 backing: .buffered,
                 defer: false
             )
-            window.title = "WhisprFlow"
+            window.title = "Whispr"
             window.contentView = NSHostingView(rootView: historyView)
             window.center()
             window.isReleasedWhenClosed = false

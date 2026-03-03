@@ -1,0 +1,686 @@
+/* Whispr - Premium Open Source Design */
+
+:root {
+    /* Premium "Paper" Palette */
+    --bg-primary: #FDFBF7;
+    /* Cream/Off-white */
+    --bg-secondary: #F3F1EC;
+    --text-primary: #1A1A1A;
+    /* Almost black */
+    --text-secondary: #4A4A4A;
+    --text-tertiary: #717171;
+
+    /* Accents */
+    --accent-dark: #111827;
+    --accent-green: #065F46;
+    /* Deep forest green */
+    --accent-blue: #2563EB;
+
+    /* Borders & Decor */
+    --border-subtle: rgba(0, 0, 0, 0.06);
+    --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.05);
+    --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.04);
+
+    /* Typography */
+    --font-serif: 'Playfair Display', serif;
+    --font-sans: 'Inter', -apple-system, sans-serif;
+
+    --container-width: 1100px;
+    --radius-lg: 24px;
+}
+
+*,
+*::before,
+*::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+    font-size: 16px;
+}
+
+body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    line-height: 1.6;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.2s ease;
+}
+
+/* Typography Overrides */
+h1,
+h2,
+h3 {
+    font-family: var(--font-serif);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+}
+
+.serif-italic {
+    font-style: italic;
+    font-weight: 400;
+}
+
+/* Navigation */
+.nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    max-width: var(--container-width);
+    margin: 0 auto;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    font-size: 1.25rem;
+    letter-spacing: -0.02em;
+}
+
+.logo-icon {
+    width: 24px;
+    height: 24px;
+    color: var(--accent-dark);
+}
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
+.nav-link {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.nav-link:hover {
+    color: var(--text-primary);
+}
+
+/* Hero Section */
+.hero {
+    text-align: center;
+    padding: 4rem 1.5rem 2rem;
+}
+
+.hero-content {
+    max-width: 800px;
+    margin: 0 auto 3rem;
+}
+
+.badge {
+    display: inline-block;
+    padding: 0.4rem 1rem;
+    background: #EBE9E4;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.badge:hover {
+    background: #E5E5E5;
+    transform: translateY(-2px);
+    color: var(--text-primary);
+}
+
+.hero h1 {
+    font-size: clamp(3rem, 6vw, 4.5rem);
+    line-height: 1.1;
+    margin-bottom: 1.5rem;
+}
+
+.tagline {
+    font-size: 1.25rem;
+    color: var(--text-secondary);
+    max-width: 580px;
+    margin: 0 auto 2rem;
+    line-height: 1.6;
+}
+
+.cta-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem 2rem;
+    border-radius: 50px;
+    font-weight: 500;
+    font-size: 1rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-primary {
+    background: var(--text-primary);
+    color: white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    background: black;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.btn-secondary {
+    background: white;
+    border: 1px solid #E5E5E5;
+    color: var(--text-primary);
+}
+
+.btn-secondary:hover {
+    border-color: #D4D4D4;
+    background: #FAFAFA;
+}
+
+.note {
+    font-size: 0.875rem;
+    color: var(--text-tertiary);
+}
+
+/* Hero Visual */
+.hero-visual {
+    margin: 3rem auto 0;
+    padding: 0 1rem;
+    max-width: 1000px;
+}
+
+.mockup-container {
+    border-radius: 20px;
+    box-shadow: 0 20px 60px -10px rgba(0, 0, 0, 0.12);
+    overflow: hidden;
+    background: white;
+}
+
+.app-mockup {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Comparison Section */
+.comparison {
+    padding: 6rem 1.5rem;
+    background: white;
+}
+
+.section-header {
+    text-align: center;
+    margin-bottom: 4rem;
+}
+
+.section-header h2 {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.section-header p {
+    font-size: 1.125rem;
+    color: var(--text-secondary);
+}
+
+.comparison-table {
+    max-width: 900px;
+    margin: 0 auto;
+    border: 1px solid #E5E5E5;
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.table-header,
+.table-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    padding: 1.25rem 2rem;
+    align-items: center;
+}
+
+.table-header {
+    background: #FAFAFA;
+    border-bottom: 1px solid #E5E5E5;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.table-row {
+    border-bottom: 1px solid #F5F5F5;
+}
+
+.table-row:last-child {
+    border-bottom: none;
+}
+
+.col-whispr {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.highlight-text {
+    color: var(--accent-green);
+}
+
+.col-others {
+    color: var(--text-secondary);
+}
+
+/* Social Proof */
+.social-proof {
+    text-align: center;
+    padding: 4rem 1.5rem;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-subtle);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.social-proof p {
+    font-size: 1.1rem;
+    font-family: var(--font-serif);
+    font-style: italic;
+    color: var(--text-secondary);
+}
+
+/* Use Cases */
+.use-cases {
+    padding: 6rem 1.5rem;
+    background: var(--bg-primary);
+}
+
+.cards-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    max-width: var(--container-width);
+    margin: 0 auto;
+}
+
+.card {
+    background: white;
+    padding: 2.5rem;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    transition: transform 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    border-color: #E5E5E5;
+}
+
+.card-icon {
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+}
+
+.card h3 {
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+    font-family: var(--font-sans);
+}
+
+.card p {
+    color: var(--text-secondary);
+}
+
+/* Features */
+.features {
+    padding: 6rem 1.5rem;
+    background: white;
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    max-width: var(--container-width);
+    margin: 0 auto;
+}
+
+.feature {
+    padding: 2rem;
+    background: var(--bg-primary);
+    border-radius: 16px;
+}
+
+.feature-wide {
+    grid-column: span 1;
+    /* In modern grid, maybe keeping 3 columns is cleaner */
+}
+
+.feature h3 {
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+    font-family: var(--font-sans);
+}
+
+.feature p {
+    color: var(--text-secondary);
+}
+
+/* How It Works */
+.how-it-works {
+    padding: 6rem 1.5rem;
+    background: var(--bg-secondary);
+    text-align: center;
+}
+
+.how-it-works h2 {
+    margin-bottom: 3rem;
+    font-size: 2.5rem;
+}
+
+.steps {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    max-width: 900px;
+    margin: 0 auto;
+    gap: 1rem;
+}
+
+.step {
+    flex: 1;
+}
+
+.step-number {
+    font-family: var(--font-serif);
+    font-size: 3rem;
+    color: #D4D4D4;
+    margin-bottom: 1rem;
+    line-height: 1;
+}
+
+.step-line {
+    width: 60px;
+    height: 1px;
+    background: #D4D4D4;
+    margin-top: -2rem;
+}
+
+.step h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    font-family: var(--font-sans);
+}
+
+.step p {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+/* FAQ */
+.faq {
+    padding: 6rem 1.5rem;
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.faq h2 {
+    font-size: 2.5rem;
+    margin-bottom: 3rem;
+    text-align: center;
+}
+
+.faq-list {
+    display: grid;
+    gap: 2rem;
+}
+
+.faq-item {
+    border-bottom: 1px solid #E5E5E5;
+    padding-bottom: 2rem;
+}
+
+.faq-item:last-child {
+    border: none;
+}
+
+.faq-item h3 {
+    font-family: var(--font-sans);
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+}
+
+.faq-item p {
+    color: var(--text-secondary);
+}
+
+/* Download */
+.download {
+    text-align: center;
+    padding: 8rem 1.5rem;
+    background: var(--bg-secondary);
+}
+
+.download h2 {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.download p {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    margin-bottom: 2.5rem;
+}
+
+.requirements {
+    font-size: 0.9rem;
+    margin-top: 1.5rem;
+    display: block;
+}
+
+/* Footer */
+.footer {
+    padding: 4rem 1.5rem;
+    background: white;
+    border-top: 1px solid #F0F0F0;
+}
+
+.footer-content {
+    max-width: var(--container-width);
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.footer-brand {
+    font-weight: 700;
+    font-size: 1.25rem;
+    font-family: var(--font-serif);
+}
+
+.footer-links-group {
+    display: flex;
+    gap: 2rem;
+}
+
+.footer-links-group a {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+.footer-links-group a:hover {
+    color: var(--text-primary);
+}
+
+/* Mobile Responsive */
+@media (max-width: 900px) {
+
+    .cards-grid,
+    .features-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .table-header,
+    .table-row {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .col-others,
+    .table-header div:nth-child(3) {
+        display: none;
+        /* Hide competitor column on tablet if squeezed */
+    }
+}
+
+@media (max-width: 700px) {
+
+    /* Navigation */
+    .nav {
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1rem;
+    }
+
+    .nav-links {
+        display: none;
+    }
+
+    /* Hero */
+    .hero {
+        padding-top: 3rem;
+    }
+
+    .hero h1 {
+        font-size: 2.75rem;
+    }
+
+    /* Hero mockup responsive sizing */
+    .hero-visual {
+        padding: 0 0.5rem;
+    }
+
+    .mockup-container {
+        border-radius: 12px;
+    }
+
+    .app-mockup {
+        width: 100%;
+        height: auto;
+        max-width: 100%;
+        object-fit: contain;
+    }
+
+    /* Stack Grids */
+    .cards-grid,
+    .features-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* Comparison Table for Mobile */
+    .comparison-table {
+        border: none;
+    }
+
+    .table-header {
+        display: none;
+    }
+
+    .table-row {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+        background: #FAFAFA;
+        margin-bottom: 1rem;
+        padding: 1.5rem;
+        border-radius: 12px;
+        border: 1px solid #E5E5E5;
+    }
+
+    .col-feature {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        color: var(--text-tertiary);
+        margin-bottom: 0.25rem;
+    }
+
+    .col-whispr {
+        font-size: 1.1rem;
+    }
+
+    .col-whispr::before {
+        content: "Whispr";
+        display: block;
+        font-size: 0.75rem;
+        color: var(--text-tertiary);
+        text-transform: uppercase;
+        margin-bottom: 0.2rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+    }
+
+    .col-others {
+        display: block;
+        font-size: 0.95rem;
+        margin-top: 0.75rem;
+        padding-top: 0.75rem;
+        border-top: 1px dashed #E5E5E5;
+        width: 100%;
+    }
+
+    .col-others::before {
+        content: "Wispr Flow (Paid)";
+        display: block;
+        font-size: 0.75rem;
+        color: var(--text-tertiary);
+        text-transform: uppercase;
+        margin-bottom: 0.2rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+    }
+
+    /* How It Works Stack */
+    .steps {
+        flex-direction: column;
+        gap: 2rem;
+    }
+
+    .step-line {
+        width: 1px;
+        height: 40px;
+        margin: 0;
+    }
+
+    /* Footer Stack */
+    .footer-content {
+        flex-direction: column;
+        gap: 2rem;
+    }
+}

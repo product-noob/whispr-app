@@ -1,41 +1,5 @@
 import Foundation
 
-// MARK: - Transcription Mode
-
-/// Transcription mode selection
-enum TranscriptionMode: String, CaseIterable, Codable {
-    case standard = "standard"   // File upload (cheaper, slight delay)
-    case fast = "fast"           // Realtime WebSocket (instant, higher cost)
-    
-    var displayName: String {
-        switch self {
-        case .standard: return "Standard"
-        case .fast: return "Fast (Realtime)"
-        }
-    }
-    
-    var description: String {
-        switch self {
-        case .standard: return "Batch upload - Best for cost efficiency"
-        case .fast: return "Real-time streaming - Instant results (~10x cost)"
-        }
-    }
-    
-    /// Get/set current mode from UserDefaults
-    static var current: TranscriptionMode {
-        get {
-            if let saved = UserDefaults.standard.string(forKey: "transcription_mode"),
-               let mode = TranscriptionMode(rawValue: saved) {
-                return mode
-            }
-            return .standard
-        }
-        set {
-            UserDefaults.standard.set(newValue.rawValue, forKey: "transcription_mode")
-        }
-    }
-}
-
 // MARK: - Transcription Entry
 
 /// Represents a single transcription entry in history
@@ -137,6 +101,49 @@ final class HistoryStore {
     var averageWordsPerEntry: Int {
         guard !entries.isEmpty else { return 0 }
         return totalWords / entries.count
+    }
+    
+    /// Get the most recent transcription entry
+    var lastEntry: TranscriptionEntry? {
+        entries.first
+    }
+    
+    /// Calculate current streak of consecutive days with transcriptions
+    var currentStreak: Int {
+        guard !entries.isEmpty else { return 0 }
+        
+        let calendar = Calendar.current
+        var streak = 0
+        var currentDate = calendar.startOfDay(for: Date())
+        
+        // Group entries by day
+        let entriesByDay = Dictionary(grouping: entries) { entry in
+            calendar.startOfDay(for: entry.timestamp)
+        }
+        
+        // Check if today has entries, if not start from yesterday
+        if entriesByDay[currentDate] == nil {
+            guard let yesterday = calendar.date(byAdding: .day, value: -1, to: currentDate) else {
+                return 0
+            }
+            currentDate = yesterday
+        }
+        
+        // Count consecutive days backwards
+        while entriesByDay[currentDate] != nil {
+            streak += 1
+            guard let previousDay = calendar.date(byAdding: .day, value: -1, to: currentDate) else {
+                break
+            }
+            currentDate = previousDay
+        }
+        
+        return streak
+    }
+    
+    /// Get recent entries (last N entries)
+    func recentEntries(limit: Int = 5) -> [TranscriptionEntry] {
+        Array(entries.prefix(limit))
     }
     
     init() {

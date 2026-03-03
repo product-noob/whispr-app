@@ -6,11 +6,12 @@ struct SettingsView: View {
     
     @State private var apiKey: String = ""
     @State private var showAPIKey = false
-    @State private var selectedHotkey: HotkeyManager.HotkeyType = .controlSpace
+    @State private var selectedHotkey: HotkeyManager.HotkeyType = .fnKey
     @State private var selectedOutputMode: OutputDispatcher.OutputMode = .paste
     @State private var hasAccessibilityPermission = false
     @State private var hasMicrophonePermission = false
     @State private var showSaveConfirmation = false
+    @State private var launchAtLogin = false
     
     let hotkeyManager: HotkeyManager
     let outputDispatcher: OutputDispatcher
@@ -29,6 +30,7 @@ struct SettingsView: View {
                     apiKeySection
                     hotkeySection
                     outputSection
+                    generalSection
                     permissionsSection
                 }
                 .padding(24)
@@ -51,7 +53,7 @@ struct SettingsView: View {
     private var header: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text("WhisprFlow Settings")
+                Text("Whispr Settings")
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(Design.Colors.textPrimary)
                 
@@ -220,6 +222,47 @@ struct SettingsView: View {
         .buttonStyle(.plain)
     }
     
+    // MARK: - General Section
+    
+    private var generalSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionHeader("General", icon: "gearshape")
+            
+            VStack(spacing: 8) {
+                HStack {
+                    Image(systemName: "power")
+                        .foregroundStyle(Design.Colors.textSecondary)
+                        .frame(width: 20)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Launch at Login")
+                            .font(.system(size: 13))
+                            .foregroundStyle(Design.Colors.textPrimary)
+                        
+                        Text("Start Whispr automatically when you log in")
+                            .font(.system(size: 11))
+                            .foregroundStyle(Design.Colors.textTertiary)
+                    }
+                    
+                    Spacer()
+                    
+                    Toggle("", isOn: $launchAtLogin)
+                        .toggleStyle(.switch)
+                        .labelsHidden()
+                        .onChange(of: launchAtLogin) { _, newValue in
+                            LaunchAtLogin.isEnabled = newValue
+                        }
+                }
+                .padding(10)
+                .background(Design.Colors.background)
+                .cornerRadius(8)
+            }
+        }
+        .padding(16)
+        .background(Design.Colors.surface)
+        .cornerRadius(12)
+    }
+    
     // MARK: - Permissions Section
     
     private var permissionsSection: some View {
@@ -336,6 +379,7 @@ struct SettingsView: View {
         selectedOutputMode = outputDispatcher.outputMode
         hasAccessibilityPermission = hotkeyManager.hasAccessibilityPermission
         hasMicrophonePermission = AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
+        launchAtLogin = LaunchAtLogin.isEnabled
     }
     
     private func saveSettings() {
@@ -360,7 +404,7 @@ struct SettingsView: View {
     }
     
     private func resetToDefaults() {
-        selectedHotkey = .controlSpace
+        selectedHotkey = .fnKey
         selectedOutputMode = .paste
     }
     

@@ -33,7 +33,7 @@ final class HotkeyManager {
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
     private var isHotkeyPressed = false
-    private(set) var currentHotkey: HotkeyType = .controlSpace
+    private(set) var currentHotkey: HotkeyType = .fnKey
     
     // For modifier+key combos
     private var modifiersPressed = false

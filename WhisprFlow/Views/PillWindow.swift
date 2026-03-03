@@ -24,9 +24,9 @@ final class PillWindow: NSPanel {
     private var hostingView: NSHostingView<PillView>?
     
     init(stateManager: AppStateManager, callbacks: PillCallbacks = PillCallbacks()) {
-        // Larger frame to accommodate expanded state
+        // Smaller frame - just enough for the pill
         super.init(
-            contentRect: NSRect(x: 0, y: 0, width: 400, height: 80),
+            contentRect: NSRect(x: 0, y: 0, width: 400, height: 50),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
@@ -96,14 +96,14 @@ final class PillWindow: NSPanel {
         let screenFrame = screen.frame
         let visibleFrame = screen.visibleFrame
         let windowWidth: CGFloat = 400
-        let windowHeight: CGFloat = 80
+        let windowHeight: CGFloat = 50
         
         // Center horizontally using the screen's frame
         let x = screenFrame.origin.x + (screenFrame.width / 2) - (windowWidth / 2)
         
-        // Position at bottom - 40 pixels above the visible frame bottom (above dock)
+        // Position at 95% from top (5% from bottom) - just 15 pixels above the visible frame bottom
         // visibleFrame.minY is the bottom of the usable area (above dock if dock is at bottom)
-        let y = visibleFrame.minY + 40
+        let y = visibleFrame.minY + 15
         
         logToFile("[PillWindow] All screens: \(NSScreen.screens.map { "(\($0.frame))" }.joined(separator: ", "))")
         logToFile("[PillWindow] Target screen frame: \(screenFrame)")

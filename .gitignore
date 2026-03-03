@@ -1,0 +1,41 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+*.xccheckout
+*.xcscmblueprint
+xcuserdata/
+
+# Secrets - NEVER commit these
+.env
+.env.*
+*.env
+secrets/
+*.pem
+*.p12
+
+# Debug logs
+*.log
+/tmp/whisprflow_debug.log
+
+# Distribution (keep DMG in releases, not repo)
+dist/
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# Archive
+*.zip
+*.tar.gz
+
+# CocoaPods (if used later)
+Pods/
+Podfile.lock

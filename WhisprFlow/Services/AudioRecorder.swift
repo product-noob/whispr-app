@@ -2,26 +2,15 @@ import AVFoundation
 import Foundation
 
 /// Handles audio recording using AVAudioEngine
-/// Supports two modes:
-/// - Standard: Records to file at 16kHz for batch upload
-/// - Streaming: Streams PCM chunks at 24kHz for realtime API
 final class AudioRecorder {
     private var audioEngine: AVAudioEngine?
     private var audioFile: AVAudioFile?
     private var isRecording = false
-    private var isStreamingMode = false
     private var currentRecordingURL: URL?
     
     // Audio format settings
-    private let standardSampleRate: Double = 16000   // For standard file recording
-    private let streamingSampleRate: Double = 24000  // For realtime API (required)
+    private let sampleRate: Double = 16000
     private let channels: AVAudioChannelCount = 1
-    
-    // Streaming callback - receives PCM16 data at 24kHz
-    var onAudioChunk: ((Data) -> Void)?
-    
-    // For backward compatibility
-    private var sampleRate: Double { standardSampleRate }
     
     enum RecorderError: Error, LocalizedError {
         case permissionDenied
@@ -106,8 +95,8 @@ final class AudioRecorder {
         // Create format converter if needed
         let converter = AVAudioConverter(from: inputFormat, to: outputFormat)
         
-        // Install tap on input node
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: inputFormat) { [weak self] buffer, time in
+        // Install tap on input node (larger buffer = fewer callbacks = better performance)
+        inputNode.installTap(onBus: 0, bufferSize: 4096, format: inputFormat) { [weak self] buffer, time in
             guard let self = self else { return }
             
             if let converter = converter {
@@ -144,10 +133,14 @@ final class AudioRecorder {
         return url
     }
     
-    func stopRecording() throws -> URL {
+    func stopRecording() async throws -> URL {
         guard isRecording, let url = currentRecordingURL else {
             throw RecorderError.notRecording
         }
+        
+        // Add small delay to allow final audio buffers to flush
+        // This prevents the last few spoken words from being cut off
+        try await Task.sleep(for: .milliseconds(150))
         
         // Stop and cleanup
         audioEngine?.inputNode.removeTap(onBus: 0)
@@ -158,6 +151,8 @@ final class AudioRecorder {
         
         let finalURL = url
         currentRecordingURL = nil
+        
+        logToFile("[AudioRecorder] Recording stopped with flush delay, file: \(finalURL.lastPathComponent)")
         
         return finalURL
     }
@@ -173,134 +168,12 @@ final class AudioRecorder {
         audioEngine = nil
         audioFile = nil
         isRecording = false
-        isStreamingMode = false
         currentRecordingURL = nil
         
         // Delete the file
         if let url = url {
             try? FileManager.default.removeItem(at: url)
         }
-    }
-    
-    // MARK: - Streaming Recording (for Realtime API)
-    
-    /// Start streaming recording at 24kHz for realtime transcription
-    /// Audio chunks are sent via onAudioChunk callback
-    func startStreamingRecording() throws {
-        guard !isRecording else {
-            throw RecorderError.recordingInProgress
-        }
-        
-        guard hasPermission else {
-            throw RecorderError.permissionDenied
-        }
-        
-        logToFile("[AudioRecorder] Starting streaming recording at 24kHz...")
-        
-        // Setup audio engine
-        let engine = AVAudioEngine()
-        let inputNode = engine.inputNode
-        
-        // Get the native format
-        let inputFormat = inputNode.outputFormat(forBus: 0)
-        
-        // Target format: 24kHz mono Float32 for conversion
-        guard let targetFormat = AVAudioFormat(
-            commonFormat: .pcmFormatFloat32,
-            sampleRate: streamingSampleRate,
-            channels: channels,
-            interleaved: false
-        ) else {
-            throw RecorderError.engineSetupFailed
-        }
-        
-        // Create converter
-        let converter = AVAudioConverter(from: inputFormat, to: targetFormat)
-        
-        // Chunk size: ~40ms of audio at 24kHz = 960 samples
-        // Each sample is 2 bytes (16-bit), so 1920 bytes per chunk
-        let chunkSamples = 960
-        var audioBuffer = Data()
-        
-        // Install tap
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: inputFormat) { [weak self] buffer, time in
-            guard let self = self, let converter = converter else { return }
-            
-            // Convert to target format
-            let frameCount = AVAudioFrameCount(Double(buffer.frameLength) * self.streamingSampleRate / inputFormat.sampleRate)
-            guard let convertedBuffer = AVAudioPCMBuffer(pcmFormat: targetFormat, frameCapacity: frameCount) else { return }
-            
-            var error: NSError?
-            let inputBlock: AVAudioConverterInputBlock = { inNumPackets, outStatus in
-                outStatus.pointee = .haveData
-                return buffer
-            }
-            
-            converter.convert(to: convertedBuffer, error: &error, withInputFrom: inputBlock)
-            
-            guard error == nil,
-                  let floatChannelData = convertedBuffer.floatChannelData else { return }
-            
-            // Convert Float32 to Int16 PCM
-            let frameLength = Int(convertedBuffer.frameLength)
-            var pcmData = Data(capacity: frameLength * 2)
-            
-            for i in 0..<frameLength {
-                let floatSample = floatChannelData[0][i]
-                // Clamp and convert to Int16
-                let clampedSample = max(-1.0, min(1.0, floatSample))
-                let int16Sample = Int16(clampedSample * 32767)
-                // Little-endian
-                var sample = int16Sample.littleEndian
-                pcmData.append(Data(bytes: &sample, count: 2))
-            }
-            
-            // Accumulate in buffer
-            audioBuffer.append(pcmData)
-            
-            // Send chunks when we have enough data
-            while audioBuffer.count >= chunkSamples * 2 {
-                let chunk = audioBuffer.prefix(chunkSamples * 2)
-                audioBuffer.removeFirst(chunkSamples * 2)
-                
-                // Call callback on main thread
-                let chunkData = Data(chunk)
-                DispatchQueue.main.async {
-                    self.onAudioChunk?(chunkData)
-                }
-            }
-        }
-        
-        // Start engine
-        engine.prepare()
-        try engine.start()
-        
-        self.audioEngine = engine
-        self.isRecording = true
-        self.isStreamingMode = true
-        
-        logToFile("[AudioRecorder] Streaming recording started")
-    }
-    
-    /// Stop streaming recording
-    func stopStreamingRecording() {
-        guard isRecording, isStreamingMode else { return }
-        
-        logToFile("[AudioRecorder] Stopping streaming recording...")
-        
-        // Stop and cleanup
-        audioEngine?.inputNode.removeTap(onBus: 0)
-        audioEngine?.stop()
-        audioEngine = nil
-        isRecording = false
-        isStreamingMode = false
-        
-        logToFile("[AudioRecorder] Streaming recording stopped")
-    }
-    
-    /// Check if currently in streaming mode
-    var isStreaming: Bool {
-        return isRecording && isStreamingMode
     }
     
     // MARK: - Audio Compression
@@ -367,6 +240,16 @@ final class AudioRecorder {
             return 0
         }
         return size
+    }
+    
+    /// Check if file should be compressed (skip for small files under 500KB)
+    /// Small WAV files upload quickly enough without compression overhead
+    func shouldCompress(fileURL: URL) -> Bool {
+        let size = getFileSize(at: fileURL)
+        let threshold: Int64 = 500 * 1024 // 500KB
+        let shouldCompress = size > threshold
+        logToFile("[AudioRecorder] File size: \(size) bytes, should compress: \(shouldCompress)")
+        return shouldCompress
     }
     
     // MARK: - Helpers

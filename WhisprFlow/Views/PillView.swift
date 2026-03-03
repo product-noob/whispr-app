@@ -61,7 +61,7 @@ struct PillView: View {
                 onOpenHistory?()  // Opens the dashboard which contains all tabs
             }
             Divider()
-            Button("Quit WhisprFlow") {
+            Button("Quit Whispr") {
                 NSApplication.shared.terminate(nil)
             }
         }
@@ -71,9 +71,9 @@ struct PillView: View {
     
     private var collapsedPill: some View {
         Button(action: handlePillTap) {
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color.black.opacity(0.6))
-                .frame(width: 48, height: 16)
+            RoundedRectangle(cornerRadius: 6)
+                .fill(Color.black.opacity(0.35))
+                .frame(width: 40, height: 12)
         }
         .buttonStyle(.plain)
         .help("Click or hold \(hotkeyName) to start dictating")
@@ -82,14 +82,14 @@ struct PillView: View {
     // MARK: - Expanded Pill (Full UI)
     
     private var expandedPill: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
             pillContent
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .background(Color.black.opacity(0.85))
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(Color.black.opacity(0.65))
         .clipShape(Capsule())
-        .shadow(color: .black.opacity(0.3), radius: 10, y: 4)
+        .shadow(color: .black.opacity(0.2), radius: 8, y: 3)
     }
     
     @ViewBuilder
@@ -139,18 +139,9 @@ struct PillView: View {
                 }
                 .frame(width: 30)
                 
-                // Show "Recording..." or partial transcript
-                if stateManager.isFastMode && !stateManager.partialTranscript.isEmpty {
-                    Text(stateManager.partialTranscript)
-                        .font(.system(size: 13))
-                        .foregroundStyle(.white.opacity(0.9))
-                        .lineLimit(2)
-                        .truncationMode(.head)
-                } else {
-                    Text(stateManager.isFastMode ? "Listening..." : "Recording...")
-                        .font(.system(size: 13))
-                        .foregroundStyle(.white.opacity(0.9))
-                }
+                Text("Recording...")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.white.opacity(0.9))
                 
                 Spacer()
                 
@@ -172,17 +163,6 @@ struct PillView: View {
                         .foregroundStyle(.white.opacity(0.6))
                 }
                 .buttonStyle(.plain)
-            }
-            
-            // Fast mode indicator
-            if stateManager.isFastMode {
-                HStack(spacing: 4) {
-                    Image(systemName: "bolt.fill")
-                        .font(.system(size: 9))
-                    Text("Fast mode")
-                        .font(.system(size: 9))
-                }
-                .foregroundStyle(Color(hex: "F59E0B"))
             }
         }
     }
