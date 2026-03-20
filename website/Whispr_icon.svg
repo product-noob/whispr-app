@@ -1,0 +1,15 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g clip-path="url(#clip0_3_2)">
+<path d="M256 0H0V256H256V0Z" fill="#141319" style="fill:#141319;fill:color(display-p3 0.0784 0.0745 0.0980);fill-opacity:1;"/>
+<path d="M87 112.5C87 108.91 84.0899 106 80.5 106C76.9101 106 74 108.91 74 112.5V143.5C74 147.09 76.9101 150 80.5 150C84.0899 150 87 147.09 87 143.5V112.5Z" fill="#A79FCF" style="fill:#A79FCF;fill:color(display-p3 0.6549 0.6235 0.8118);fill-opacity:1;"/>
+<path d="M110 100.5C110 96.9101 107.09 94 103.5 94C99.9101 94 97 96.9101 97 100.5V155.5C97 159.09 99.9101 162 103.5 162C107.09 162 110 159.09 110 155.5V100.5Z" fill="#A79FCF" style="fill:#A79FCF;fill:color(display-p3 0.6549 0.6235 0.8118);fill-opacity:1;"/>
+<path d="M134.5 80.5C134.5 76.9101 131.59 74 128 74C124.41 74 121.5 76.9101 121.5 80.5V175.5C121.5 179.09 124.41 182 128 182C131.59 182 134.5 179.09 134.5 175.5V80.5Z" fill="#A79FCF" style="fill:#A79FCF;fill:color(display-p3 0.6549 0.6235 0.8118);fill-opacity:1;"/>
+<path d="M159 96.5C159 92.9101 156.09 90 152.5 90C148.91 90 146 92.9101 146 96.5V159.5C146 163.09 148.91 166 152.5 166C156.09 166 159 163.09 159 159.5V96.5Z" fill="#A79FCF" style="fill:#A79FCF;fill:color(display-p3 0.6549 0.6235 0.8118);fill-opacity:1;"/>
+<path d="M182 111.5C182 107.91 179.09 105 175.5 105C171.91 105 169 107.91 169 111.5V144.5C169 148.09 171.91 151 175.5 151C179.09 151 182 148.09 182 144.5V111.5Z" fill="#A79FCF" style="fill:#A79FCF;fill:color(display-p3 0.6549 0.6235 0.8118);fill-opacity:1;"/>
+</g>
+<defs>
+<clipPath id="clip0_3_2">
+<rect width="256" height="256" rx="40" fill="white" style="fill:white;fill-opacity:1;"/>
+</clipPath>
+</defs>
+</svg>
