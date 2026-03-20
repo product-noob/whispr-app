@@ -25,6 +25,7 @@ secrets/
 
 # Distribution (keep DMG in releases, not repo)
 dist/
+website/*.dmg
 
 # IDE
 .idea/
