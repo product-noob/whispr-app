@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		197C87962F6C908400AC0814 /* SwiftWhisper in Frameworks */ = {isa = PBXBuildFile; productRef = 197C87952F6C908400AC0814 /* SwiftWhisper */; };
+		197C87992F6C90B100AC0814 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 197C87982F6C90B100AC0814 /* Sparkle */; };
+		197C879C2F6C917D00AC0814 /* FluidAudio in Frameworks */ = {isa = PBXBuildFile; productRef = 197C879B2F6C917D00AC0814 /* FluidAudio */; };
 		A1000001229A0001 /* WhisprFlowApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000011229A0001 /* WhisprFlowApp.swift */; };
 		A1000002229A0001 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000012229A0001 /* AppDelegate.swift */; };
 		A1000003229A0001 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000013229A0001 /* AppState.swift */; };
@@ -28,10 +31,20 @@
 		A1000028229A0001 /* ObfuscatedKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000029229A0001 /* ObfuscatedKey.swift */; };
 		A100002A229A0001 /* AddAPIKeyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100002B229A0001 /* AddAPIKeyView.swift */; };
 		A100002C229A0001 /* LaunchAtLogin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100002D229A0001 /* LaunchAtLogin.swift */; };
+		A1000030229A0001 /* ConfigStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000031229A0001 /* ConfigStore.swift */; };
+		A1000032229A0001 /* StringDistance.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000033229A0001 /* StringDistance.swift */; };
+		A1000034229A0001 /* TranscriptionModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000035229A0001 /* TranscriptionModel.swift */; };
+		A1000036229A0001 /* ModelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000037229A0001 /* ModelManager.swift */; };
+		A1000038229A0001 /* TextPostProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000039229A0001 /* TextPostProcessor.swift */; };
+		A100003A229A0001 /* TranscriptionBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100003B229A0001 /* TranscriptionBackend.swift */; };
+		A100003C229A0001 /* OpenAITranscriber.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100003D229A0001 /* OpenAITranscriber.swift */; };
+		A100003E229A0001 /* FluidAudioTranscriber.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100003F229A0001 /* FluidAudioTranscriber.swift */; };
+		A1000040229A0001 /* WhisperCppTranscriber.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000041229A0001 /* WhisperCppTranscriber.swift */; };
+		A1000042229A0001 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000043229A0001 /* OnboardingView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		A1000000229A0001 /* WhisprFlow.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WhisprFlow.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1000000229A0001 /* Whispr.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Whispr.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A1000011229A0001 /* WhisprFlowApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhisprFlowApp.swift; sourceTree = "<group>"; };
 		A1000012229A0001 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A1000013229A0001 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
@@ -55,6 +68,16 @@
 		A1000029229A0001 /* ObfuscatedKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObfuscatedKey.swift; sourceTree = "<group>"; };
 		A100002B229A0001 /* AddAPIKeyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddAPIKeyView.swift; sourceTree = "<group>"; };
 		A100002D229A0001 /* LaunchAtLogin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAtLogin.swift; sourceTree = "<group>"; };
+		A1000031229A0001 /* ConfigStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigStore.swift; sourceTree = "<group>"; };
+		A1000033229A0001 /* StringDistance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringDistance.swift; sourceTree = "<group>"; };
+		A1000035229A0001 /* TranscriptionModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionModel.swift; sourceTree = "<group>"; };
+		A1000037229A0001 /* ModelManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelManager.swift; sourceTree = "<group>"; };
+		A1000039229A0001 /* TextPostProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextPostProcessor.swift; sourceTree = "<group>"; };
+		A100003B229A0001 /* TranscriptionBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionBackend.swift; sourceTree = "<group>"; };
+		A100003D229A0001 /* OpenAITranscriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenAITranscriber.swift; sourceTree = "<group>"; };
+		A100003F229A0001 /* FluidAudioTranscriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FluidAudioTranscriber.swift; sourceTree = "<group>"; };
+		A1000041229A0001 /* WhisperCppTranscriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhisperCppTranscriber.swift; sourceTree = "<group>"; };
+		A1000043229A0001 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -62,6 +85,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				197C87962F6C908400AC0814 /* SwiftWhisper in Frameworks */,
+				197C879C2F6C917D00AC0814 /* FluidAudio in Frameworks */,
+				197C87992F6C90B100AC0814 /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -98,6 +124,7 @@
 				A1000013229A0001 /* AppState.swift */,
 				A1000014229A0001 /* AppStateManager.swift */,
 				A1000023229A0001 /* TranscriptionHistory.swift */,
+				A1000035229A0001 /* TranscriptionModel.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -111,6 +138,7 @@
 				A1000020229A0001 /* MenuBarView.swift */,
 				A1000025229A0001 /* HistoryView.swift */,
 				A100002B229A0001 /* AddAPIKeyView.swift */,
+				A1000043229A0001 /* OnboardingView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -123,6 +151,9 @@
 				A100001C229A0001 /* HotkeyManager.swift */,
 				A100001D229A0001 /* OutputDispatcher.swift */,
 				A1000027229A0001 /* TrialTracker.swift */,
+				A1000037229A0001 /* ModelManager.swift */,
+				A1000039229A0001 /* TextPostProcessor.swift */,
+				A10000B6229A0001 /* Transcribers */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -134,6 +165,8 @@
 				A1000019229A0001 /* KeychainHelper.swift */,
 				A1000029229A0001 /* ObfuscatedKey.swift */,
 				A100002D229A0001 /* LaunchAtLogin.swift */,
+				A1000031229A0001 /* ConfigStore.swift */,
+				A1000033229A0001 /* StringDistance.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -146,10 +179,21 @@
 			path = Resources;
 			sourceTree = "<group>";
 		};
+		A10000B6229A0001 /* Transcribers */ = {
+			isa = PBXGroup;
+			children = (
+				A100003B229A0001 /* TranscriptionBackend.swift */,
+				A100003D229A0001 /* OpenAITranscriber.swift */,
+				A100003F229A0001 /* FluidAudioTranscriber.swift */,
+				A1000041229A0001 /* WhisperCppTranscriber.swift */,
+			);
+			path = Transcribers;
+			sourceTree = "<group>";
+		};
 		A10000C0229A0001 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				A1000000229A0001 /* WhisprFlow.app */,
+				A1000000229A0001 /* Whispr.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -171,7 +215,7 @@
 			);
 			name = WhisprFlow;
 			productName = WhisprFlow;
-			productReference = A1000000229A0001 /* WhisprFlow.app */;
+			productReference = A1000000229A0001 /* Whispr.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -182,7 +226,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1500;
-				LastUpgradeCheck = 1500;
+				LastUpgradeCheck = 1630;
 				TargetAttributes = {
 					A10000D0229A0001 = {
 						CreatedOnToolsVersion = 15.0;
@@ -198,6 +242,11 @@
 				Base,
 			);
 			mainGroup = A10000A0229A0001;
+			packageReferences = (
+				197C87942F6C908400AC0814 /* XCRemoteSwiftPackageReference "SwiftWhisper" */,
+				197C87972F6C90B100AC0814 /* XCRemoteSwiftPackageReference "Sparkle" */,
+				197C879A2F6C917D00AC0814 /* XCRemoteSwiftPackageReference "FluidAudio" */,
+			);
 			productRefGroup = A10000C0229A0001 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -243,6 +292,16 @@
 				A1000028229A0001 /* ObfuscatedKey.swift in Sources */,
 				A100002A229A0001 /* AddAPIKeyView.swift in Sources */,
 				A100002C229A0001 /* LaunchAtLogin.swift in Sources */,
+				A1000030229A0001 /* ConfigStore.swift in Sources */,
+				A1000032229A0001 /* StringDistance.swift in Sources */,
+				A1000034229A0001 /* TranscriptionModel.swift in Sources */,
+				A1000036229A0001 /* ModelManager.swift in Sources */,
+				A1000038229A0001 /* TextPostProcessor.swift in Sources */,
+				A100003A229A0001 /* TranscriptionBackend.swift in Sources */,
+				A100003C229A0001 /* OpenAITranscriber.swift in Sources */,
+				A100003E229A0001 /* FluidAudioTranscriber.swift in Sources */,
+				A1000040229A0001 /* WhisperCppTranscriber.swift in Sources */,
+				A1000042229A0001 /* OnboardingView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -255,10 +314,12 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = WhisprFlow/WhisprFlow.entitlements;
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_IDENTITY = "Apple Development: princejain17@icloud.com (JZ63476N2N)";
+				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "WhisprFlow/Resources/Assets.xcassets";
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_ASSET_PATHS = WhisprFlow/Resources/Assets.xcassets;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = NO;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -285,10 +346,12 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = WhisprFlow/WhisprFlow.entitlements;
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_IDENTITY = "Apple Development: princejain17@icloud.com (JZ63476N2N)";
+				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "WhisprFlow/Resources/Assets.xcassets";
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_ASSET_PATHS = WhisprFlow/Resources/Assets.xcassets;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = NO;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -343,6 +406,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -406,6 +470,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -449,6 +514,51 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		197C87942F6C908400AC0814 /* XCRemoteSwiftPackageReference "SwiftWhisper" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/exPHAT/SwiftWhisper";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.2.0;
+			};
+		};
+		197C87972F6C90B100AC0814 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.9.0;
+			};
+		};
+		197C879A2F6C917D00AC0814 /* XCRemoteSwiftPackageReference "FluidAudio" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/FluidInference/FluidAudio.git";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		197C87952F6C908400AC0814 /* SwiftWhisper */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 197C87942F6C908400AC0814 /* XCRemoteSwiftPackageReference "SwiftWhisper" */;
+			productName = SwiftWhisper;
+		};
+		197C87982F6C90B100AC0814 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 197C87972F6C90B100AC0814 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
+		197C879B2F6C917D00AC0814 /* FluidAudio */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 197C879A2F6C917D00AC0814 /* XCRemoteSwiftPackageReference "FluidAudio" */;
+			productName = FluidAudio;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A10000A1229A0001 /* Project object */;
 }

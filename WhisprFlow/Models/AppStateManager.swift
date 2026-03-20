@@ -27,6 +27,10 @@ final class AppStateManager {
         state == .recording
     }
     
+    var canCancelTranscription: Bool {
+        state == .transcribing
+    }
+
     var canRetry: Bool {
         if case .error(let error) = state {
             return error.isRetryable && currentRecordingURL != nil
@@ -71,6 +75,15 @@ final class AppStateManager {
         return true
     }
     
+    /// Cancel the current transcription. Returns true if transition was valid.
+    @discardableResult
+    func cancelTranscription() -> Bool {
+        guard canCancelTranscription else { return false }
+        state = .idle
+        currentRecordingURL = nil
+        return true
+    }
+
     /// Mark transcription as successful
     func transcriptionSucceeded(text: String) {
         guard state == .transcribing else { return }

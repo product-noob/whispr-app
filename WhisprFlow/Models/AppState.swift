@@ -56,7 +56,9 @@ enum RecordingError: Equatable, LocalizedError {
         switch self {
         case .microphonePermissionDenied, .microphoneUnavailable, .noAPIKey, .invalidAPIKey:
             return false
-        case .recordingFailed, .transcriptionTimeout, .transcriptionFailed, .networkError, .emptyTranscription:
+        case .emptyTranscription:
+            return false
+        case .recordingFailed, .transcriptionTimeout, .transcriptionFailed, .networkError:
             return true
         }
     }

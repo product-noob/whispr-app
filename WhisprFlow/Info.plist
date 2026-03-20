@@ -36,5 +36,9 @@
     <!-- Microphone Usage Description -->
     <key>NSMicrophoneUsageDescription</key>
     <string>Whispr needs microphone access to record your voice for transcription.</string>
+
+    <!-- Sparkle Auto-Update Feed -->
+    <key>SUFeedURL</key>
+    <string>https://whispr.princejain.me/appcast.xml</string>
 </dict>
 </plist>

@@ -31,6 +31,18 @@ enum Design {
         
         /// Error state color
         static let error = Color(hex: "EF4444")
+
+        /// Subtle border color for cards, dividers
+        static let border = Color(hex: "E5E5E5")
+
+        /// Very light background for input fields, sections
+        static let surfaceSecondary = Color(hex: "F9FAFB")
+
+        /// Subtle background for badges, icon buttons
+        static let fill = Color(hex: "F3F4F6")
+
+        /// Disabled icon/text color
+        static let disabled = Color(hex: "D1D5DB")
     }
     
     // MARK: - Dimensions
@@ -73,6 +85,12 @@ enum Design {
 }
 
 // MARK: - Color Extension
+
+// MARK: - Notification Names
+
+extension Notification.Name {
+    static let whisprModelChanged = Notification.Name("whisprModelChanged")
+}
 
 extension Color {
     init(hex: String) {

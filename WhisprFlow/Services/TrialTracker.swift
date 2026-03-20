@@ -5,139 +5,127 @@ import Foundation
 @Observable
 final class TrialTracker {
     static let shared = TrialTracker()
-    
+
     private let maxTrialTranscriptions = 20
     private let maxTrialDays = 1
-    
-    private let firstLaunchKey = "whisprflow_first_launch"
-    private let transcriptionCountKey = "whisprflow_trial_count"
-    
+
     private(set) var transcriptionsUsed: Int = 0
     private(set) var firstLaunchDate: Date?
-    
+
     init() {
         load()
     }
-    
+
     // MARK: - Public Properties
-    
+
+    /// Whether the user is on a local model (no trial needed)
+    var isUsingLocalModel: Bool {
+        let model = TranscriptionModel(rawValue: ConfigStore.shared.config.selectedModel)
+        return model?.isLocal ?? false
+    }
+
     /// Whether the trial period is still active
     var isTrialActive: Bool {
-        // If user has their own key configured, trial status doesn't matter
-        if KeychainHelper.hasAPIKey {
-            return false // Not using trial, using own key
-        }
-        
-        // Check both limits
+        if KeychainHelper.hasAPIKey { return false }
         return !hasExceededTranscriptionLimit && !hasExceededTimeLimit
     }
-    
+
     /// Whether trial has ended and user needs to add their own key
     var trialEnded: Bool {
         return hasExceededTranscriptionLimit || hasExceededTimeLimit
     }
-    
+
     /// Number of transcriptions remaining in trial
     var transcriptionsRemaining: Int {
         return max(0, maxTrialTranscriptions - transcriptionsUsed)
     }
-    
-    /// Whether user can transcribe (either trial active OR has own key)
+
+    /// Whether user can transcribe (local model, trial active, OR has own key)
     var canTranscribe: Bool {
+        if isUsingLocalModel { return true }
         return isTrialActive || KeychainHelper.hasAPIKey
     }
-    
+
     /// Human-readable trial status for UI
     var trialStatusMessage: String {
-        if KeychainHelper.hasAPIKey {
-            return "Using your API key"
-        }
-        
-        if trialEnded {
-            return "Trial ended"
-        }
-        
+        if isUsingLocalModel { return "Using local model" }
+        if KeychainHelper.hasAPIKey { return "Using your API key" }
+        if trialEnded { return "Trial ended" }
+
         let remaining = transcriptionsRemaining
-        if remaining == 1 {
-            return "1 free transcription left"
-        }
+        if remaining == 1 { return "1 free transcription left" }
         return "\(remaining) free transcriptions left"
     }
-    
+
     // MARK: - Private Properties
-    
+
     private var hasExceededTranscriptionLimit: Bool {
         return transcriptionsUsed >= maxTrialTranscriptions
     }
-    
+
     private var hasExceededTimeLimit: Bool {
         guard let firstLaunch = firstLaunchDate else { return false }
         let daysSinceFirstLaunch = Calendar.current.dateComponents([.day], from: firstLaunch, to: Date()).day ?? 0
         return daysSinceFirstLaunch >= maxTrialDays
     }
-    
+
     // MARK: - Public Methods
-    
+
     /// Record a successful transcription (call after transcription completes)
     func recordTranscription() {
-        // Only count against trial if using trial key
-        if !KeychainHelper.hasAPIKey {
+        if !KeychainHelper.hasAPIKey && !isUsingLocalModel {
             transcriptionsUsed += 1
             save()
             logToFile("[TrialTracker] Recorded transcription. Used: \(transcriptionsUsed)/\(maxTrialTranscriptions)")
         }
     }
-    
+
     /// Get the appropriate API key to use
     func getAPIKey() -> String? {
-        // Prefer user's own key
         if let userKey = KeychainHelper.getAPIKey(), !userKey.isEmpty {
             return userKey
         }
-        
-        // Fall back to trial key if trial is active
         if isTrialActive {
             return ObfuscatedKey.trialKey
         }
-        
         return nil
     }
-    
+
     /// Check if we should show the "add your key" prompt
     var shouldShowAddKeyPrompt: Bool {
+        if isUsingLocalModel { return false }
         return trialEnded && !KeychainHelper.hasAPIKey
     }
-    
-    // MARK: - Persistence
-    
+
+    // MARK: - Persistence (ConfigStore-backed)
+
     private func load() {
-        // Load first launch date
-        if let timestamp = UserDefaults.standard.object(forKey: firstLaunchKey) as? Double {
+        let config = ConfigStore.shared.config
+
+        if let timestamp = config.trialFirstLaunch {
             firstLaunchDate = Date(timeIntervalSince1970: timestamp)
         } else {
-            // First launch - record it
             firstLaunchDate = Date()
-            UserDefaults.standard.set(firstLaunchDate!.timeIntervalSince1970, forKey: firstLaunchKey)
+            ConfigStore.shared.update { $0.trialFirstLaunch = Date().timeIntervalSince1970 }
             logToFile("[TrialTracker] First launch recorded")
         }
-        
-        // Load transcription count
-        transcriptionsUsed = UserDefaults.standard.integer(forKey: transcriptionCountKey)
+
+        transcriptionsUsed = config.trialTranscriptionCount
         logToFile("[TrialTracker] Loaded: \(transcriptionsUsed) transcriptions used, first launch: \(firstLaunchDate?.description ?? "unknown")")
     }
-    
+
     private func save() {
-        UserDefaults.standard.set(transcriptionsUsed, forKey: transcriptionCountKey)
+        ConfigStore.shared.update { $0.trialTranscriptionCount = self.transcriptionsUsed }
     }
-    
-    // MARK: - Debug (remove in production if desired)
-    
+
     #if DEBUG
     func resetTrial() {
         transcriptionsUsed = 0
         firstLaunchDate = Date()
-        UserDefaults.standard.set(firstLaunchDate!.timeIntervalSince1970, forKey: firstLaunchKey)
-        UserDefaults.standard.set(0, forKey: transcriptionCountKey)
+        ConfigStore.shared.update {
+            $0.trialFirstLaunch = Date().timeIntervalSince1970
+            $0.trialTranscriptionCount = 0
+        }
         logToFile("[TrialTracker] Trial reset for debugging")
     }
     #endif

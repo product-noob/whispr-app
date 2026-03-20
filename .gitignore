@@ -26,9 +26,6 @@ secrets/
 # Distribution (keep DMG in releases, not repo)
 dist/
 
-# Website files (live in product-noob/whispr repo, not source repo)
-website/
-
 # IDE
 .idea/
 *.swp

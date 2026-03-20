@@ -1,0 +1,60 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Build DMG and publish release
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode 16
+        run: sudo xcode-select -s /Applications/Xcode_16.app/Contents/Developer
+
+      - name: Build
+        run: |
+          xcodebuild \
+            -project WhisprFlow.xcodeproj \
+            -scheme WhisprFlow \
+            -configuration Release \
+            clean build
+
+      - name: Create DMG
+        run: |
+          BUILD_DIR=$(xcodebuild \
+            -project WhisprFlow.xcodeproj \
+            -scheme WhisprFlow \
+            -configuration Release \
+            -showBuildSettings 2>/dev/null \
+            | grep '^ *BUILT_PRODUCTS_DIR' \
+            | awk '{print $3}')
+
+          mkdir -p ./dist/Whispr
+          cp -R "$BUILD_DIR/Whispr.app" ./dist/Whispr/
+          ln -s /Applications ./dist/Whispr/Applications
+
+          hdiutil create \
+            -volname "Whispr" \
+            -srcfolder ./dist/Whispr \
+            -ov -format UDZO \
+            ./dist/Whispr.dmg
+
+          rm -rf ./dist/Whispr
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Whispr ${{ github.ref_name }}
+          body: |
+            Download **Whispr.dmg**, open it, and drag Whispr to Applications.
+
+            > On first launch, right-click the app and select **Open** to bypass Gatekeeper.
+          files: dist/Whispr.dmg
+          draft: false
+          prerelease: false
