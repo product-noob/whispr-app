@@ -12,7 +12,7 @@ A minimal, fast voice-to-text app for macOS. Press and hold to dictate, release 
 
 ## Installation
 
-1. Download `Whispr.dmg` from the [latest release](../../releases/latest)
+1. [Download Whispr.dmg](https://github.com/product-noob/whispr-app/releases/download/v2.0.0/Whispr.dmg)
 2. Open the DMG and drag Whispr to Applications
 3. Launch Whispr from Applications
 4. Grant the required permissions:
