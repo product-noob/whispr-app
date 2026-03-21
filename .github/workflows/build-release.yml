@@ -35,6 +35,9 @@ jobs:
             -project WhisprFlow.xcodeproj \
             -scheme WhisprFlow \
             -configuration Release \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
             clean build
 
       - name: Create DMG
