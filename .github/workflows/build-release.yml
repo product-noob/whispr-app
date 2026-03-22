@@ -56,26 +56,7 @@ jobs:
 
           # Bundle an install script that copies the app and removes the
           # macOS quarantine flag so Gatekeeper doesn't block it.
-          cat > "./dist/Whispr/Install Whispr.command" << 'SCRIPT'
-#!/bin/bash
-set -e
-
-APP_SOURCE="$(cd "$(dirname "$0")" && pwd)/Whispr.app"
-DEST="/Applications/Whispr.app"
-
-echo "Installing Whispr..."
-
-# Copy app to /Applications (overwrite if already present)
-cp -R "$APP_SOURCE" "$DEST"
-
-# Remove the quarantine extended attribute that triggers Gatekeeper.
-# This is safe: Whispr is open-source at https://github.com/product-noob/whispr-app
-xattr -cr "$DEST"
-
-echo ""
-echo "Done! Whispr has been installed to /Applications."
-echo "You can now launch it from Spotlight or your Applications folder."
-SCRIPT
+          cp scripts/install.command "./dist/Whispr/Install Whispr.command"
           chmod +x "./dist/Whispr/Install Whispr.command"
 
           hdiutil create \
