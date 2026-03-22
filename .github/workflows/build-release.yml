@@ -54,6 +54,30 @@ jobs:
           cp -R "$BUILD_DIR/Whispr.app" ./dist/Whispr/
           ln -s /Applications ./dist/Whispr/Applications
 
+          # Bundle an install script that copies the app and removes the
+          # macOS quarantine flag so Gatekeeper doesn't block it.
+          cat > "./dist/Whispr/Install Whispr.command" << 'SCRIPT'
+#!/bin/bash
+set -e
+
+APP_SOURCE="$(cd "$(dirname "$0")" && pwd)/Whispr.app"
+DEST="/Applications/Whispr.app"
+
+echo "Installing Whispr..."
+
+# Copy app to /Applications (overwrite if already present)
+cp -R "$APP_SOURCE" "$DEST"
+
+# Remove the quarantine extended attribute that triggers Gatekeeper.
+# This is safe: Whispr is open-source at https://github.com/product-noob/whispr-app
+xattr -cr "$DEST"
+
+echo ""
+echo "Done! Whispr has been installed to /Applications."
+echo "You can now launch it from Spotlight or your Applications folder."
+SCRIPT
+          chmod +x "./dist/Whispr/Install Whispr.command"
+
           hdiutil create \
             -volname "Whispr" \
             -srcfolder ./dist/Whispr \
@@ -67,9 +91,25 @@ jobs:
         with:
           name: Whispr ${{ github.ref_name }}
           body: |
-            Download **Whispr.dmg**, open it, and drag Whispr to Applications.
+            ## Install
 
-            > On first launch, right-click the app and select **Open** to bypass Gatekeeper.
+            1. Download **Whispr.dmg** and open it.
+            2. **Double-click "Install Whispr"** in the window — this copies the app to `/Applications` and clears the macOS security flag automatically.
+            3. Launch Whispr from Spotlight or your Applications folder.
+
+            ### Why the install script?
+            Whispr is not notarized with Apple (that requires a $99/yr developer fee).
+            The install script removes the [quarantine flag](https://support.apple.com/en-us/102445)
+            that macOS attaches to downloaded files, which is what causes the
+            _"Apple could not verify Whispr is free of malware"_ error.
+            Whispr is fully open-source — you can audit every line at the link above.
+
+            ### Alternative (manual)
+            If you prefer not to use the script, drag Whispr to Applications manually,
+            then run this once in Terminal:
+            ```
+            xattr -cr /Applications/Whispr.app
+            ```
           files: dist/Whispr.dmg
           draft: false
           prerelease: false
