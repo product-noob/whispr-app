@@ -529,7 +529,7 @@
 			repositoryURL = "https://github.com/sparkle-project/Sparkle";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 2.9.0;
+				minimumVersion = 2.8.0;
 			};
 		};
 		197C879A2F6C917D00AC0814 /* XCRemoteSwiftPackageReference "FluidAudio" */ = {
