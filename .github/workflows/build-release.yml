@@ -29,29 +29,95 @@ jobs:
           fi
           xcodebuild -version
 
-      - name: Build
+      - name: Import Developer ID Certificate
+        env:
+          DEVELOPER_ID_CERT_BASE64: ${{ secrets.DEVELOPER_ID_CERT_BASE64 }}
+          DEVELOPER_ID_CERT_PASSWORD: ${{ secrets.DEVELOPER_ID_CERT_PASSWORD }}
+        run: |
+          KEYCHAIN_PATH=$RUNNER_TEMP/signing.keychain-db
+          KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          CERT_PATH=$RUNNER_TEMP/developer_id.p12
+          echo "$DEVELOPER_ID_CERT_BASE64" | base64 --decode -o "$CERT_PATH"
+          security import "$CERT_PATH" -k "$KEYCHAIN_PATH" -P "$DEVELOPER_ID_CERT_PASSWORD" -T /usr/bin/codesign
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          rm -f "$CERT_PATH"
+
+      - name: Archive
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           xcodebuild \
             -project WhisprFlow.xcodeproj \
             -scheme WhisprFlow \
             -configuration Release \
-            CODE_SIGN_IDENTITY="-" \
-            CODE_SIGNING_REQUIRED=YES \
-            CODE_SIGNING_ALLOWED=YES \
-            clean build
+            -archivePath ./build/Whispr.xcarchive \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="Developer ID Application" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+            CODE_SIGN_ENTITLEMENTS=WhisprFlow/WhisprFlow.entitlements \
+            ENABLE_HARDENED_RUNTIME=YES \
+            archive
 
-      - name: Create DMG
+      - name: Export App
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          BUILD_DIR=$(xcodebuild \
-            -project WhisprFlow.xcodeproj \
-            -scheme WhisprFlow \
-            -configuration Release \
-            -showBuildSettings 2>/dev/null \
-            | grep '^ *BUILT_PRODUCTS_DIR' \
-            | awk '{print $3}')
+          cat > ./build/ExportOptions.plist << EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>developer-id</string>
+            <key>teamID</key>
+            <string>${APPLE_TEAM_ID}</string>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>signingCertificate</key>
+            <string>Developer ID Application</string>
+          </dict>
+          </plist>
+          EOF
 
+          xcodebuild \
+            -exportArchive \
+            -archivePath ./build/Whispr.xcarchive \
+            -exportOptionsPlist ./build/ExportOptions.plist \
+            -exportPath ./build/export
+
+      - name: Notarize App
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          # Zip app for submission (notarytool requires a zip, pkg, or dmg)
+          ditto -c -k --keepParent ./build/export/Whispr.app ./build/Whispr.zip
+
+          xcrun notarytool submit ./build/Whispr.zip \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_APP_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --wait
+
+          # Staple the notarization ticket to the app
+          xcrun stapler staple ./build/export/Whispr.app
+
+      - name: Create and Notarize DMG
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
           mkdir -p ./dist/Whispr
-          cp -R "$BUILD_DIR/Whispr.app" ./dist/Whispr/
+          cp -R ./build/export/Whispr.app ./dist/Whispr/
           ln -s /Applications ./dist/Whispr/Applications
 
           hdiutil create \
@@ -62,14 +128,31 @@ jobs:
 
           rm -rf ./dist/Whispr
 
+          # Sign the DMG with a secure timestamp
+          codesign --sign "Developer ID Application" \
+            --timestamp \
+            ./dist/Whispr.dmg
+
+          # Notarize the DMG and staple the ticket
+          xcrun notarytool submit ./dist/Whispr.dmg \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_APP_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --wait
+
+          xcrun stapler staple ./dist/Whispr.dmg
+
+      - name: Clean up Keychain
+        if: always()
+        run: |
+          security delete-keychain $RUNNER_TEMP/signing.keychain-db || true
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           name: Whispr ${{ github.ref_name }}
           body: |
             Download **Whispr.dmg**, open it, and drag Whispr to Applications.
-
-            > On first launch, right-click the app and select **Open** to bypass Gatekeeper.
           files: dist/Whispr.dmg
           draft: false
           prerelease: false
